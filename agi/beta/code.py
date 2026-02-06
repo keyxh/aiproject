@@ -5,15 +5,11 @@
     "files": [
         {
             "filename": "agi.py",
-            "content": "# agi.py\n\nimport openai\n\nclass AGI:\n    def __init__(self, api_key):\n        self.api_key = api_key\n        self.client = openai.OpenAI(api_key=self.api_key)\n\n    def ask_question(self, question):\n        # Use the OpenAI API to generate a response to the user's question\n        response = self.client.Completion.create(\n            engine='text-davinci-002',\n            prompt=question,\n            max_tokens=150\n        )\n        return response.choices[0].text.strip()\n\n    def train_model(self, data):\n        # Placeholder for model training logic\n        # This would involve preprocessing the data, selecting a model, and training it\n        pass\n\n    def improve_response(self, feedback):\n        # Placeholder for feedback loop to improve responses over time\n        # This would involve analyzing feedback and adjusting the model accordingly\n        pass\n"
+            "content": "# agi.py\n\nimport openai\n\nclass AGI:\n    def __init__(self, api_key):\n        self.api_key = api_key\n        openai.api_key = api_key\n\n    def generate_response(self, prompt):\n        \n        # 使用OpenAI API生成响应\n        response = openai.Completion.create(\n            engine='text-davinci-002',  # 使用文本 Davinci 模型\n            prompt=prompt,\n            max_tokens=150  # 最大生成150个token\n        )\n        return response.choices[0].text.strip()\n\n# 主函数，用于演示AGI的使用\nif __name__ == '__main__':\n    # 替换为你的OpenAI API密钥\n    API_KEY = 'your-api-key'\n\n    # 创建AGI实例\n    agi = AGI(API_KEY)\n\n    # 获取用户输入\n    user_input = input('Enter a prompt for AGI: ')\n\n    # 获取AGI的响应\n    response = agi.generate_response(user_input)\n\n    # 打印AGI的响应\n    print('AGI Response:', response)\n"
         },
         {
-            "filename": "config.py",
-            "content": "# config.py\n\n# OpenAI API Key\nAPI_KEY = 'your_openai_api_key_here'\n"
-        },
-        {
-            "filename": "main.py",
-            "content": "# main.py\n\nfrom agi import AGI\nfrom config import API_KEY\n\nif __name__ == '__main__':\n    # Initialize the AGI system with the provided API key\n    agi_system = AGI(API_KEY)\n\n    # Example interaction with the AGI system\n    question = 'What is the capital of France?'\n    answer = agi_system.ask_question(question)\n    print(f'AGI: {answer}')\n"
+            "filename": "README.md",
+            "content": "# AGI Project\n\nThis project aims to implement a truly advanced general intelligence (AGI) using the OpenAI API.\n\n## Features\n\n- Utilizes OpenAI's powerful GPT-3 model\n- Interacts with the user via text prompts\n\n## Installation\n\n1. Install OpenAI Python package:\n\n    pip install openai\n\n2. Set your OpenAI API key in the `agi.py` file:\n\n    API_KEY = 'your-api-key'\n\n## Usage\n\nRun the `agi.py` script and interact with the AGI via text prompts.\n\n## License\n\nMIT\n"
         }
     ]
 }
