@@ -5,15 +5,11 @@
     "files": [
         {
             "filename": "agi.py",
-            "content": "# agi.py - The main file for the AGI project using OpenAI API.\n\nimport openai\nfrom flask import Flask, request, jsonify\n\napp = Flask(__name__)\n\n# Replace 'your-api-key' with your actual OpenAI API key\nopenai.api_key = 'your-api-key'\n\n@app.route('/query', methods=['POST'])\n\ndef query_api():\n    data = request.get_json()\n    if not data or 'prompt' not in data:\n        return jsonify({'error': 'Invalid request'}), 400\n\n    prompt = data['prompt']\n    response = openai.Completion.create(\n        engine='text-davinci-002',\n        prompt=prompt,\n        max_tokens=150\n    )\n    return jsonify({'response': response.choices[0].text.strip()})\n\nif __name__ == '__main__':\n    app.run(debug=True)\n"
-        },
-        {
-            "filename": "requirements.txt",
-            "content": "Flask==2.0.1\nopenai==0.27.0\n"
+            "content": "# agi.py\n\nimport openai\n\nclass AGI:\n    def __init__(self, api_key):\n        self.api_key = api_key\n        openai.api_key = api_key\n\n    def generate_response(self, prompt):\n        response = openai.Completion.create(\n            engine='text-davinci-002',\n            prompt=prompt,\n            max_tokens=150\n        )\n        return response.choices[0].text.strip()\n\n# Example usage:\nif __name__ == '__main__':\n    api_key = 'your_openai_api_key_here'\n    agi_instance = AGI(api_key)\n    prompt = 'Translate the following English text to French: Hello, how are you?'\n    print(agi_instance.generate_response(prompt))\n"
         },
         {
             "filename": "README.md",
-            "content": "# AGI Project\n\nThis project is an attempt to create a true AGI using the OpenAI API.\n\n## Overview\n\nThe project uses the OpenAI API to process queries and generate responses, aiming to mimic the behavior of an artificial general intelligence.\n\n## Features\n\n- Uses the OpenAI GPT-3 model to generate responses.\n- A simple REST API is provided for querying the AGI.\n\n## Setup\n\nTo run the project, install the required packages using the following command:\n\n    pip install -r requirements.txt\n\n## Running the Application\n\nRun the application with the following command:\n\n    python agi.py\n\nThe AGI will be available at http://127.0.0.1:5000/query.\n"
+            "content": "# AGI Project\n\nThis project aims to create an Artificial General Intelligence (AGI) using the OpenAI API.\n\n## Features\n- Uses OpenAI's text-davinci-002 engine for natural language processing\n- Can generate text based on prompts\n\n## Installation\nNo external packages are required as only the OpenAI Python client library is used.\n\n## Usage\n```python\nfrom agi import AGI\n\napi_key = 'your_openai_api_key_here'\nagi_instance = AGI(api_key)\nprompt = 'Translate the following English text to French: Hello, how are you?'\nprint(generate_response(prompt))\n```"
         }
     ]
 }
