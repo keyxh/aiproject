@@ -2,11 +2,68 @@
 
 ```json
 {
-    "files": [
-        {
-            "filename": "agi_core.py",
-            "content": "\"\"\"AGI核心系统实现\n\n这个模块实现了AGI(通用人工智能)的核心功能，包括:\n1. 多模态感知能力\n2. 自主学习能力\n3. 推理与决策能力\n4. 记忆与知识管理\n\"\"\"\n\nimport os\nimport json\nimport time\nimport logging\nfrom datetime import datetime\nfrom typing import Dict, List, Any, Optional, Union\nimport openai\nfrom dataclasses import dataclass, field\nfrom enum import Enum\n\n# 设置日志\nlogging.basicConfig(level=logging.INFO)\nlogger = logging.getLogger(\"AGI\")\n\n\nclass AGIState(Enum):\n    \"\"\"AGI系统的状态枚举\"\"\"\n    IDLE = \"idle\"\n    LEARNING = \"learning\"\n    REASONING = \"reasoning\"\n    DECIDING = \"deciding\"\n    ACTING = \"acting\"\n    SLEEPING = \"sleeping\"\n\n\nclass PerceptionType(Enum):\n    \"\"\"感知类型枚举\"\"\"\n    TEXT = \"text\"\n    IMAGE = \"image\"\n    AUDIO = \"audio\"\n    VIDEO = \"video\"\n    SENSOR = \"sensor\"\n\n\n@dataclass\nclass Memory:\n    \"\"\"记忆数据结构\"\"\"\n    content: str\n    timestamp: float = field(default_factory=time.time)\n    importance: float = 0.5  # 0-1之间，表示重要程度\n    category: str = \"general\"\n    tags: List[str] = field(default_factory=list)\n\n\nclass AGIKnowledgeBase:\n    \"\"\"AGI知识库管理\"\"\"\n    \n    def __init__(self):\n        self.knowledge = {}\n        self.memories = []\n        self.concepts = set()\n    \n    def add_memory(self, memory: Memory) -> None:\n        \"\"\"添加记忆到知识库\"\"\"\n        self.memories.append(memory)\n        logger.info(f\"Added memory: {memory.content[:50]}...\")\n    \n    def retrieve_relevant_memories(self, query: str, limit: int = 5) -> List[Memory]:\n        \"\"\"检索与查询相关的记忆\"\"\"\n        # 这里简化实现，实际AGI应该使用更复杂的语义检索\n        relevant = []\n        for memory in self.memories:\n            if query.lower() in memory.content.lower():\n                relevant.append(memory)\n        return relevant[-limit:]\n    \n    def save_to_file(self, filepath: str) -> None:\n        \"\"\"保存知识库到文件\"\"\"\n        data = {\n            \"memories\": [\n                {\n                    \"content\": m.content,\n                    \"timestamp\": m.timestamp,\n                    \"importance\": m.importance,\n                    \"category\": m.category,\n                    \"tags\": m.tags\n                } for m in self.memories\n            ],\n            \"concepts\": list(self.concepts)\n        }\n        with open(filepath, 'w', encoding='utf-8') as f:\n            json.dump(data, f, ensure_ascii=False, indent=2)\n    \n    def load_from_file(self, filepath: str) -> None:\n        \"\"\"从文件加载知识库\"\"\"\n        if not os.path.exists(filepath):\n            return\n        \n        with open(filepath, 'r', encoding='utf-8') as f:\n            data = json.load(f)\n        \n        self.memories = [\n            Memory(\n                content=m[\"content\"],\n                timestamp=m[\"timestamp\"],\n                importance=m[\"importance\"],\n                category=m[\"category\"],\n                tags=m[\"tags\"]\n            ) for m in data[\"memories\"]\n        ]\n        self.concepts = set(data[\"concepts\"])\n\n\nclass AGIPerceptionSystem:\n    \"\"\"AGI感知系统\"\"\"\n    \n    def __init__(self, openai_api_key: str):\n        self.openai = openai.OpenAI(api_key=openai_api_key)\n    \n    def perceive(self, data: Union[str, bytes], perception_type: PerceptionType) -> Dict[str, Any]:\n        \"\"\"感知输入数据\"\"\"\n        logger.info(f\"Perceiving {perception_type.value} data\")\n        \n        if perception_type == PerceptionType.TEXT:\n            return self._perceive_text(data)\n        elif perception_type == PerceptionType.IMAGE:\n            return self._perceive_image(data)\n        elif perception_type == PerceptionType.AUDIO:\n            return self._perceive_audio(data)\n        else:\n            return {\"type\": perception_type.value, \"raw_data\": data}\n    \n    def _perceive_text(self, text: str) -> Dict[str, Any]:\n        \"\"\"感知文本数据\"\"\"\n        # 使用OpenAI进行文本理解\n        response = self.openai.chat.completions.create(\n            model=\"gpt-4-turbo\",\n            messages=[\n                {\"role\": \"system\", \"content\": \"你是一个高级文本分析助手。请分析以下文本，提取关键信息、情感和主题。\"},\n                {\"role\": \"user\", \"content\": f\"请分析以下文本:\\n\\n{text}\"}\n            ],\n            temperature=0.3,\n            max_tokens=500\n        )\n        \n        analysis = response.choices[0].message.content\n        \n        return {\n            \"type\": \"text\",\n            \"raw_data\": text,\n            \"analysis\": analysis,\n            \"timestamp\": time.time()\n        }\n    \n    def _perceive_image(self, image_data: bytes) -> Dict[str, Any]:\n        \"\"\"感知图像数据\"\"\"\n        # 这里简化实现，实际应该使用图像API\n        return {\n            \"type\": \"image\",\n            \"raw_data\": image_data,\n            \"analysis\": \"图像分析结果(简化实现)\",\n            \"timestamp\": time.time()\n        }\n    \n    def _perceive_audio(self, audio_data: bytes) -> Dict[str, Any]:\n        \"\"\"感知音频数据\"\"\"\n        # 这里简化实现，实际应该使用音频API\n        return {\n            \"type\": \"audio\",\n            \"raw_data\": audio_data,\n            \"analysis\": \"音频分析结果(简化实现)\",\n            \"timestamp\": time.time()\n        }\n\n\nclass AGIReasoningEngine:\n    \"\"\"AGI推理引擎\"\"\"\n    \n    def __init__(self, openai_api_key: str):\n        self.openai = openai.OpenAI(api_key=openai_api_key)\n    \n    def reason(self, query: str, context: List[Dict[str, Any]] = None) -> Dict[str, Any]:\n        \"\"\"基于上下文进行推理\"\"\"\n        logger.info(\"Reasoning...\")\n        \n        # 构建推理提示\n        system_prompt = \"\"\"你是一个高级推理引擎。基于提供的上下文和问题，请进行深入推理，\n        分析问题，考虑多种可能性，并给出合理的结论和建议。\n        \n        请按照以下格式输出:\n        1. 问题分析:\n        2. 关键信息:\n        3. 可能的解决方案:\n        4. 推理过程:\n        5. 结论:\n        \"\"\"\n        \n        user_prompt = f\"问题: {query}\\n\\n上下文:\\n\"\n        if context:\n            for item in context:\n                user_prompt += f\"- {item}\\n\"\n        else:\n            user_prompt += \"无特定上下文\\n\"\n        \n        response = self.openai.chat.completions.create(\n            model=\"gpt-4-turbo\",\n            messages=[\n                {\"role\": \"system\", \"content\": system_prompt},\n                {\"role\": \"user\", \"content\": user_prompt}\n            ],\n            temperature=0.2,  # 较低温度以获得更确定的推理\n            max_tokens=800\n        )\n        \n        reasoning_result = response.choices[0].message.content\n        \n        return {\n            \"query\": query,\n            \"reasoning\": reasoning_result,\n            \"timestamp\": time.time()\n        }\n    \n    def plan(self, goal: str, current_state: Dict[str, Any]) -> Dict[str, Any]:\n        \"\"\"制定行动计划\"\"\"\n        logger.info(\"Planning...\")\n        \n        system_prompt = \"\"\"你是一个高级规划助手。基于当前状态和目标，\n        请制定详细的行动计划，包括具体步骤、所需资源和预期结果。\n        \n        请按照以下格式输出:\n        1. 目标分析:\n        2. 当前状态评估:\n        3. 行动步骤:\n        4. 资源需求:\n        5. 预期结果:\n        6. 潜在风险与应对措施:\n        \"\"\"\n        \n        user_prompt = f\"目标: {goal}\\n\\n当前状态:\\n\"\n        for key, value in current_state.items():\n            user_prompt += f\"- {key}: {value}\\n\"\n        \n        response = self.openai.chat.completions.create(\n            model=\"gpt-4-turbo\",\n            messages=[\n                {\"role\": \"system\", \"content\": system_prompt},\n                {\"role\": \"user\", \"content\": user_prompt}\n            ],\n            temperature=0.3,\n            max_tokens=800\n        )\n        \n        plan_result = response.choices[0].message.content\n        \n        return {\n            \"goal\": goal,\n            \"plan\": plan_result,\n            \"timestamp\": time.time()\n        }\n\n\nclass AGI:\n    \"\"\"AGI主系统类\"\"\"\n    \n    def __init__(self, openai_api_key: str, knowledge_base_path: str = \"agi_knowledge.json\"):\n        \"\"\"初始化AGI系统\"\"\"\n        self.state = AGIState.IDLE\n        self.openai_api_key = openai_api_key\n        self.knowledge_base = AGIKnowledgeBase()\n        self.perception_system = AGIPerceptionSystem(openai_api_key)\n        self.reasoning_engine = AGIReasoningEngine(openai_api_key)\n        self.knowledge_base_path = knowledge_base_path\n        \n        # 加载现有知识库\n        self.knowledge_base.load_from_file(knowledge_base_path)\n        \n        logger.info(\"AGI系统初始化完成\")\n    \n    def perceive_and_learn(self, data: Union[str, bytes], perception_type: PerceptionType, \n                          context: str = \"\") -> None:\n        \"\"\"感知数据并学习\"\"\"\n        self.state = AGIState.LEARNING\n        \n        # 感知数据\n        perception = self.perception_system.perceive(data, perception_type)\n        \n        # 将感知结果转换为记忆\n        memory_content = f\"感知类型: {perception['type']}\\n\"\n        if 'analysis' in perception:\n            memory_content += f\"分析结果: {perception['analysis']}\\n\"\n        if context:\n            memory_content += f\"上下文: {context}\\n\"\n        \n        memory = Memory(\n            content=memory_content,\n            category=\"perception\",\n            tags=[perception['type'], \"learning\"]\n        )\n        \n        # 添加到知识库\n        self.knowledge_base.add_memory(memory)\n        \n        self.state = AGIState.IDLE\n        logger.info(\"学习完成\")\n    \n    def reason(self, query: str, use_memory: bool = True) -> Dict[str, Any]:\n        \"\"\"回答问题并进行推理\"\"\"\n        self.state = AGIState.REASONING\n        \n        # 获取相关记忆作为上下文\n        context = []\n        if use_memory:\n            relevant_memories = self.knowledge_base.retrieve_relevant_memories(query)\n            for memory in relevant_memories:\n                context.append(memory.content)\n        \n        # 进行推理\n        reasoning_result = self.reasoning_engine.reason(query, context)\n        \n        # 将推理结果添加到知识库\n        memory = Memory(\n            content=f\"问题: {query}\\n推理结果: {reasoning_result['reasoning']}\",\n            category=\"reasoning\",\n            tags=[\"reasoning\", query]\n        )\n        self.knowledge_base.add_memory(memory)\n        \n        self.state = AGIState.IDLE\n        return reasoning_result\n    \n    def plan_and_act(self, goal: str, current_state: Dict[str, Any] = None) -> Dict[str, Any]:\n        \"\"\"制定计划并执行行动\"\"\"\n        self.state = AGIState.DECIDING\n        \n        # 默认当前状态\n        if current_state is None:\n            current_state = {\n                \"timestamp\": time.time(),\n                \"memories_count\": len(self.knowledge_base.memories),\n                \"concepts_count\": len(self.knowledge_base.concepts)\n            }\n        \n        # 制定计划\n        plan = self.reasoning_engine.plan(goal, current_state)\n        \n        # 将计划添加到知识库\n        memory = Memory(\n            content=f\"目标: {goal}\\n计划: {plan['plan']}\",\n            category=\"planning\",\n            tags=[\"plan\", goal]\n        )\n        self.knowledge_base.add_memory(memory)\n        \n        # 执行计划（简化实现）\n        self.state = AGIState.ACTING\n        action_result = {\n            \"goal\": goal,\n            \"plan\": plan,\n            \"action\": \"执行计划的具体行动（简化实现）\",\n            \"timestamp\": time.time()\n        }\n        \n        # 将行动结果添加到知识库\n        memory = Memory(\n            content=f\"目标: {goal}\\n行动结果: {action_result}\",\n            category=\"action\",\n            tags=[\"action\", goal]\n        )\n        self.knowledge_base.add_memory(memory)\n        \n        self.state = AGIState.IDLE\n        return action_result\n    \n    def save_state(self) -> None:\n        \"\"\"保存AGI状态到文件\"\"\"\n        self.knowledge_base.save_to_file(self.knowledge_base_path)\n        logger.info(f\"AGI状态已保存到 {self.knowledge_base_path}\")\n    \n    def get_status(self) -> Dict[str, Any]:\n        \"\"\"获取AGI当前状态\"\"\"\n        return {\n            \"state\": self.state.value,\n            \"memories_count\": len(self.knowledge_base.memories),\n            \"concepts_count\": len(self.knowledge_base.concepts),\n            \"timestamp\": time.time()\n        }\n\n\n# 示例使用\nif __name__ == \"__main__\":\n    # 从环境变量获取API密钥\n    openai_api_key = os.getenv(\"OPENAI_API_KEY\")\n    if not openai_api_key:\n        raise ValueError(\"请设置OPENAI_API_KEY环境变量\")\n    \n    # 创建AGI实例\n    agi = AGI(openai_api_key)\n    \n    # 感知和学习\n    agi.perceive_and_learn(\"今天天气很好，适合户外活动。\", PerceptionType.TEXT)\n    agi.perceive_and_learn(\"人工智能的未来发展充满机遇和挑战。\", PerceptionType.TEXT)\n    \n    # 推理\n    reasoning_result = agi.reason(\"什么是人工智能？\")\n    print(\"推理结果:\")\n    print(reasoning_result[\"reasoning\"])\n    \n    # 规划和行动\n    plan_result = agi.plan_and_act(\"提高AGI的知识水平\")\n    print(\"行动计划:\")\n    print(plan_result[\"plan\"])\n    \n    # 获取状态\n    status = agi.get_status()\n    print(f\"AGI状态: {status['state']}, 记忆数量: {status['memories_count']}\")\n    \n    # 保存状态\n    agi.save_state()\n"
-        },
-        {
-            "filename": "agi_server.py",
-            "content": "\"\"\"AGI服务器实现\n\n这个模块实现了AGI系统的Web服务器接口，提供RESTful API供外部应用调用AGI功能。\n\"\"\"\n\nfrom flask import Flask, request, jsonify\nimport os\nfrom agi_core import AGI, PerceptionType\n\napp = Flask(__name__)\n\n# 从环境变量获取API密钥\nopenai_api_key = os.getenv(\"OPENAI_API_KEY\")\nif not openai_api_key:\n    raise ValueError(\"请设置OPENAI_API_KEY环境变量\")\n\n# 创建AGI实例\nagi = AGI(openai_api_key)\n\n@app.route('/api/status', methods=['GET'])\ndef get_status():\n    \"\"\"获取AGI状态\"\"\"\n    status = agi.get_status()\n    return jsonify(status)\n\n@app.route('/api/learn', methods=['POST'])\ndef learn():\n    \"\"\"让AGI学习新信息\"\"\"\n    data = request.json\n    text =
+  "files": [
+    {
+      "filename": "agi.py",
+      "content": """
+# AGI实现代码
+import os
+import json
+import openai
+
+# OpenAI API密钥
+OPENAI_API_KEY = 'YOUR_API_KEY'
+
+# 初始化OpenAI API客户端
+openai.api_key = OPENAI_API_KEY
+
+# 定义AGI类
+class AGI:
+  def __init__(self):
+    # 初始化AGI模型
+    self.model = openai.Model('text-davinci-003')
+
+  # 处理输入的函数
+  def process_input(self, input_text):
+    # 使用OpenAI API进行文本处理
+    response = self.model.create(prompt=input_text, max_tokens=1024)
+    return response['choices'][0]['text']
+
+  # 学习和改进AGI模型的函数
+  def learn_and_improve(self, input_text, output_text):
+    # 使用OpenAI API进行模型微调
+    fine_tune_response = openai.FineTune.create(
+      model=self.model,
+      training_files=[{'text': input_text, 'label': output_text}],
+      max_tokens=1024
+    )
+    return fine_tune_response
+
+# 创建AGI实例
+agi = AGI()
+
+# 测试AGI
+input_text = 'Hello, how are you?'
+output_text = agi.process_input(input_text)
+print(output_text)
+
+# 学习和改进AGI模型
+agi.learn_and_improve(input_text, output_text)
+"""
+    },
+    {
+      "filename": "requirements.txt",
+      "content": """
+openai
+"""
+    },
+    {
+      "filename": "README.md",
+      "content": """
+# AGI项目
+实现一个真正意义上的AGI，如果使用的模型API用OpenAI API。
+"""
+    }
+  ]
+}
+```
