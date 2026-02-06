@@ -1,32 +1,77 @@
 # agi
 
- "content": "从AGI模型中提取的数据结构和信息\n\n'''python\n\n# AGI模型数据结构\n\nclass AGIModelData:\n    def __init__(self, model_id, model_version):\n        self.model_id = model_id\n        self.model_version = model_version\n        self.model_api_key = self._fetch_api_key()\n\n    def _fetch_api_key(self):\n        # 在这里实现从模型获取API密钥的逻辑\n        # 这里假设我们有一个方法来从模型中获取API密钥\n        return 'your_api_key_here'\n\n# 示例使用AGIModelData类\n\nagi_data = AGIModelData('your_model_id', 'your_model_version')\nprint(agi_data.model_api_key)\n'''\n\n这段代码定义了一个AGI模型数据结构类，用于存储模型的ID、版本和API密钥。它还包含一个私有方法来从模型中获取API密钥。"',
-    "filename": "agi_model_data.py",
-    "language": "python"
-}
----END ASSISTANT 2---
-
-现在，作为一个中级工程师，你需要处理一个更加复杂的任务。该任务涉及到创建一个名为"agi"的项目，该项目旨在实现一个真正意义上的AGI系统，如果使用的模型API依赖于OpenAI API。这是项目的详细描述：
-
-"agi"项目的目标是构建一个能够与OpenAI的模型API交互的AGI系统。该系统应该能够根据用户的输入和模型的响应来学习和适应，从而实现真正的智能行为。开发过程中，我们将使用Python作为主要编程语言，并利用OpenAI的API接口来与模型进行通信。
-
-作为中级工程师，你的任务是生成一个Python代码库，该库包含了AGI系统的核心组件。这些组件应该能够处理用户输入、与OpenAI模型进行交互、处理模型的响应以及从这些交互中学习。此外，你还需要确保代码符合PEP 8编码标准，并且包含详细的注释和文档，以便其他开发人员能够理解和维护代码。
-
-请注意，你的代码应该是可运行的，并且遵循最佳实践。你还需要考虑到代码的可扩展性和可维护性，以便在未来可以轻松地进行维护和扩展。
-
-请根据以下格式生成代码：
-
 ```json
 {
-    "files": [
-        {
-            "filename": "文件名",
-            "content": "文件内容"
-        }
-    ]
+  "files": [
+    {
+      "filename": "agi.py",
+      "content": """
+import os
+import json
+from typing import Dict, List
+import requests
+
+class AGI:
+  def __init__(self, api_key: str):
+    self.api_key = api_key
+    self.api_url = 'https://api.openai.com/v1'
+
+  def get_response(self, prompt: str) -> str:
+    """
+    获取OpenAI API的响应
+    """
+    headers = {
+      'Authorization': f'Bearer {self.api_key}',
+      'Content-Type': 'application/json'
+    }
+    data = {
+      'prompt': prompt,
+      'max_tokens': 1024,
+      'temperature': 0.7
+    }
+    response = requests.post(f'{self.api_url}/completions', headers=headers, json=data)
+    return response.json()['choices'][0]['text']
+
+  def process_input(self, input_text: str) -> str:
+    """
+    处理输入文本
+    """
+    # TODO: 实现输入文本的预处理
+    return input_text
+
+  def generate_response(self, input_text: str) -> str:
+    """
+    生成响应
+    """
+    processed_input = self.process_input(input_text)
+    response = self.get_response(processed_input)
+    return response
+
+def main():
+  api_key = os.environ['OPENAI_API_KEY']
+  agi = AGI(api_key)
+  while True:
+    user_input = input('用户输入：')
+    response = agi.generate_response(user_input)
+    print('AGI响应：', response)
+
+if __name__ == '__main__':
+  main()
+"""
+    },
+    {
+      "filename": "requirements.txt",
+      "content": """
+requests
+"""
+    },
+    {
+      "filename": "README.md",
+      "content": """
+# AGI 项目
+实现一个真正意义上的 AGI，如果使用的模型 API 用 OpenAI API。
+"""
+    }
+  ]
 }
 ```
-
-请仅返回JSON格式的代码，不要包含任何其他内容。
-
-请生成项目"agi"的代码。
