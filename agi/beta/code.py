@@ -1,6 +1,16 @@
 # agi
 
- "files": [
-    {
-      "filename": "agi.py",
-      "content": "'''\nAGI模块\n\n这个模块是一个AGI系统的核心部分，它使用OpenAI API来处理和响应用户输入。\n\n架构:\n- AGI系统：包含所有AGI组件的核心\n- OpenAI模型：使用OpenAI API进行交互\n\n说明:\n- 确保你有OpenAI API密钥\n- 这个模块假设了其他模块（如用户输入处理器）的存在。\n'''\n\n\"\"\"utf-8\"\n\n# AGI模块\n\n\"\"\"\nAGI系统模块\n\n这个模块提供了AGI系统的核心功能，包括处理用户输入、与模型交互以及生成响应。\n\n函数:\n- run_agi(): 主入口函数，启动AGI系统的运行\n\"\"\"\n\ndef run_agi():\n    \"\"\"\n    主入口函数，启动AGI系统的运行。\n    \"\"\"\n    # 用户输入处理\n    user_input = get_user_input()\n    \n    # 使用OpenAI模型处理输入并生成响应\n    response = openai_model_interact(user_input)\n    \n    # 输出响应\n    send_response(response)\n    \ndef get_user_input():\n    \"\"\"\n    获取用户输入。\n    这里假设有一个函数来获取输入，例如从命令行或用户界面中获取输入。\n    \"\"\"\n    # 用户输入获取的实际实现\n    pass\n\ndef openai_model_interact(input_text):\n    \"\"\"\n    使用OpenAI模型处理输入并生成响应。\n    \"\"\"\n    openai.api_key = '你的OpenAI API密钥'\n    response = openai.Completion.create(\n        engine=\"text-davinci-003\",\n        prompt=f\"用户输入：{input_text}\\n生成AGI响应：\",\n        max_tokens=150\n    )\n    \n    return response.choices[0].text.strip()\n\n# 以下是一个模拟用户输入的函数，用于测试get_user_input。\ndef test_get_user_input():\n    \"\"\"\n    测试get_user_input函数的一个简单示例。\n    \"\"\"\n    # 这里可以添加更多的测试用例，以确保get_user_input的正确性。\n    pass\n\nif __name__ == \"__main__\":\n    run_agi()\n"]}"
+```json
+{
+    "files": [
+        {
+            "filename": "agi.py",
+            "content": "# agi.py\n\nimport openai\n\n# OpenAI API credentials\nOPENAI_API_KEY = 'your-api-key'\n\n# Initialize OpenAI client\nopenai.api_key = OPENAI_API_KEY\n\nclass AGI:\n    def __init__(self):\n        self.client = openai.OpenAI(\n            api_key=OPENAI_API_KEY\n        )\n\n    def generate_response(self, prompt):\n        \n        # Generate a response using OpenAI API\n        response = self.client.Completion.create(\n            engine='text-davinci-002',  # Choose the appropriate engine\n            prompt=prompt,\n            max_tokens=150\n        )\n        return response.choices[0].text.strip()\n\n# Example usage\nif __name__ == '__main__':\n    agi_instance = AGI()\n    user_prompt = 'Translate the following English text to French: "Hello, how are you?"'\n    print(agi_instance.generate_response(user_prompt))\n"
+        },
+        {
+            "filename": "README.md",
+            "content": "# AGI Project\n\nThis project aims to create an Artificial General Intelligence (AGI) using the OpenAI API.\n\n## Features\n- Utilizes OpenAI API for text generation\n- Basic example of generating translations and other text-based responses\n\n## Setup\n\n1. Obtain an OpenAI API key from [OpenAI's website](https://platform.openai.com/).\n2. Store your API key in a file named `OPENAI_API_KEY` (without quotes) and place it in the root directory of this project.\n3. Install the required packages:\n    ```bash\n    pip install openai\n    ```\n\n## Usage\n\nTo use the AGI instance, simply create an instance of the `AGI` class and call the `generate_response` method with a prompt.\n\n```python\nfrom agi import AGI\n\nagi_instance = AGI()\nresponse = agi_instance.generate_response('Translate the following English text to French: "Hello, how are you?"')\nprint(response)\n```\n"
+        }
+    ]
+}
+```
