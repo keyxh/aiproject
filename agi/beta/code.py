@@ -1,16 +1,86 @@
 # agi
 
- ```json
+```json
 {
   "files": [
     {
+      "filename": "agi.py",
+      "content": """
+import os
+import json
+from typing import Dict, List
+import openai
+
+# Initialize OpenAI API
+openai.api_key = 'YOUR_OPENAI_API_KEY'
+
+def generate_text(prompt: str, max_tokens: int = 1024) -> str:
+    """
+    Generate text based on the given prompt.
+
+    Args:
+    - prompt (str): The prompt to generate text from.
+    - max_tokens (int): The maximum number of tokens to generate. Defaults to 1024.
+
+    Returns:
+    - str: The generated text.
+    """
+    response = openai.Completion.create(
+        engine='text-davinci-002',
+        prompt=prompt,
+        max_tokens=max_tokens
+    )
+    return response['choices'][0]['text']
+
+def process_input(input_text: str) -> str:
+    """
+    Process the input text and generate a response.
+
+    Args:
+    - input_text (str): The input text to process.
+
+    Returns:
+    - str: The generated response.
+    """
+    # Tokenize the input text
+    tokens = input_text.split()
+
+    # Generate a response based on the tokens
+    response = generate_text(input_text)
+
+    return response
+
+def main():
+    # Test the AGI model
+    input_text = 'Hello, how are you?'
+    response = process_input(input_text)
+    print(response)
+
+if __name__ == '__main__':
+    main()
+"""
+    },
+    {
       "filename": "requirements.txt",
-      "content": "openai>=1.0.0\npydantic>=2.0.0\nnumpy>=1.24.0\npython-dotenv>=1.0.0\ntyping-extensions>=4.5.0"
+      "content": """
+openai
+"""
     },
     {
-      "filename": "config/settings.py",
-      "content": "\"\"\"\nAGI系统配置模块\n管理API密钥、模型参数和系统行为配置\n\"\"\"\nimport os\nfrom typing import Optional\nfrom pydantic import Field\nfrom pydantic_settings import BaseSettings\n\n\nclass AGIConfig(BaseSettings):\n    \"\"\"AGI系统配置类\"\"\"\n    \n    # OpenAI API配置\n    openai_api_key: str = Field(..., description=\"OpenAI API密钥\")\n    openai_model: str = Field(default=\"gpt-4\", description=\"使用的主模型\")\n    openai_temperature: float = Field(default=0.7, ge=0.0, le=2.0)\n    openai_max_tokens: int = Field(default=2000, ge=1)\n    \n    # 系统行为配置\n    max_iterations: int = Field(default=10, description=\"单次任务最大迭代次数\")\n    enable_self_reflection: bool = Field(default=True, description=\"启用自我反思机制\")\n    memory_limit: int = Field(default=100, description=\"长期记忆条目上限\")\n    \n    # 日志配置\n    log_level: str = Field(default=\"INFO\")\n    enable_thought_logging: bool = Field(default=True)\n    \n    class Config:\n        env_file = \".env\"\n        env_file_encoding = \"utf-8\"\n\n\n# 全局配置实例\nsettings = AGIConfig()\n"
-    },
-    {
-      "filename": "core/memory.py",
-      "content": "\"\"\"\n记忆系统模块\n实现工作记忆（短期）和长期记忆（向量存储模拟）\n\"\"\"\nimport json\nimport numpy as np\nfrom typing import List, Dict, Any, Optional\nfrom datetime import datetime\nfrom dataclasses import dataclass, asdict\nimport hashlib\n\n\n@dataclass\nclass MemoryEntry:\n    \"\"\"记忆条目数据结构\"\"\"\n    content: str\n    timestamp: datetime\n    importance: float  # 0-1之间，用于记忆巩固\n    embedding: Optional[List[float]] = None\n    metadata: Dict[str, Any] = None\n    \n    def to_dict(self) -> Dict[str, Any]:\n        return {\n            \"content\": self.content,\n            \"timestamp\": self.timestamp.isoformat(),\n            \"importance\": self.importance,\n            \"metadata\": self.metadata or {}\n        }\n\n\nclass MemorySystem:\n    \"\"\"\n    分层记忆系统\n    - 工作记忆：当前任务上下文（有限容量）\n    - 长期记忆：历史经验和知识（向量检索）\n    \"\"\"\n    \n    def __init__(self, capacity: int = 100):\n        self.working_memory: List[MemoryEntry] = []\n        self.long_term_memory: List[MemoryEntry] = []\n        self.capacity = capacity\n        \n    def add_working_memory(self, content: str, importance: float = 0.5) -> None:\n        \"\"\"添加工作记忆，超出容量时自动转移到长期记忆\"\"\"\n        entry = MemoryEntry(\n            content=content,\n            timestamp=datetime.now(),\n            importance=importance,\n            metadata={\"type\": \"working\"}\n        )\n        \n        self.working_memory.append(entry)\n        \n        # 工作记忆溢出处理：将低重要性记忆归档\n        if len(self.working_memory) > 10:\n            # 按重要性排序，保留重要的在工作记忆中\n            self.working_memory.sort(key=lambda x: x.importance, reverse=True)\n            to_archive = self.working_memory[10:]\n            self.working_memory = self.working_memory[:10]\n            \n            for mem in to_archive:\n                self._consolidate_to_long_term(mem)\n    \n    def _consolidate_to_long_term(self, entry: MemoryEntry) -> None:\n        \"\"\"将记忆巩固到长期存储（简化实现：基于关键词的伪向量存储）\"\"\"\n        # 实际生产环境应使用真实向量数据库如ChromaDB/Pinecone\n        entry.metadata[\"type\"] = \"long_term\"\n        self.long_term_memory.append(entry)\n        \n        # 保持长期记忆容量\n        if len(self.long_term_memory) > self.capacity:\n            # 移除最不重要且最旧的记忆\n            self.long_term_memory.sort(\n                key=lambda x: (x.importance, x.timestamp), \n                reverse=True\n            )\n            self.long_term_memory = self.long_term_memory[:self.capacity]\n    \n    def retrieve_relevant(self, query: str, top_k: int = 5) -> List[str]:\n        \"\"\"\n        检索相关记忆（简化实现：基于词重叠的相似度）\n        实际应使用向量相似度计算\n        \"\"\"\n        if not self.long_term_memory:\n            return []\n            \n        query_words = set(query.lower().split())\n        scored_memories = []\n        \n        for mem in self.long_term_memory:\n            mem_words = set(mem.content.lower().split())\n            overlap = len(query_words & mem_words)\n            score = overlap / max(len(query_words), 
+      "filename": "README.md",
+      "content": """
+# AGI Project
+This project aims to implement a truly general artificial intelligence (AGI) using the OpenAI API.
+
+## Getting Started
+1. Install the required packages: `pip install -r requirements.txt`
+2. Replace `YOUR_OPENAI_API_KEY` with your actual OpenAI API key in `agi.py`.
+3. Run the project: `python agi.py`
+
+## Usage
+The project generates text based on the given prompt. You can modify the `process_input` function to process the input text and generate a response.
+"""
+    }
+  ]
+}
+```
