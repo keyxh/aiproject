@@ -1,31 +1,12 @@
 # agi
 
-```json
+ ```json
 {
-    "files": [
-        {
-            "filename": "agi.py",
-            "content": "import openai
-
-# 初始化OpenAI API客户端
-openai.api_key = 'your_openai_api_key'
-
-def generate_response(prompt):
-    # 调用OpenAI的文本生成API
-    response = openai.Completion.create(
-        engine='text-davinci-003',
-        prompt=prompt,
-        max_tokens=150  # 设置返回的最大字符数
-    )
-    # 返回生成的文本
-    return response.choices[0].text.strip()
-
-if __name__ == '__main__':
-    # 示例：生成一段文本
-    user_input = input('请输入您想要生成的文本：')
-    generated_text = generate_response(user_input)
-    print('生成的文本：\n', generated_text)"
-        }
-    ]
-}
-```
+  "files": [
+    {
+      "filename": "config/settings.py",
+      "content": "\"\"\"\nAGI Project Configuration\n全局配置管理，支持环境变量覆盖\n\"\"\"\nimport os\nfrom typing import Optional\nfrom pydantic_settings import BaseSettings\n\n\nclass Settings(BaseSettings):\n    \"\"\"应用配置类\"\"\"\n    \n    # OpenAI配置\n    openai_api_key: str = os.getenv(\"OPENAI_API_KEY\", \"\")\n    openai_base_url: Optional[str] = os.getenv(\"OPENAI_BASE_URL\")\n    model_name: str = os.getenv(\"MODEL_NAME\", \"gpt-4-1106-preview\")\n    temperature: float = 0.7\n    max_tokens: int = 4096\n    \n    # AGI认知参数\n    max_iterations: int = 100  # 防止无限循环\n    reflection_interval: int = 5  # 每5步进行一次深度反思\n    working_memory_size: int = 10  # 工作记忆容量\n    \n    # 向量数据库配置（长期记忆）\n    vector_db_path: str = \"./data/vector_db\"\n    embedding_model: str = \"text-embedding-ada-002\"\n    \n    # 工具配置\n    sandbox_mode: bool = True  # 安全沙箱模式\n    allowed_tools: list = [\"python_executor\", \"web_search\", \"file_manager\"]\n    \n    class Config:\n        env_file = \".env\"\n\n\nsettings = Settings()\n"
+    },
+    {
+      "filename": "core/memory.py",
+      "content": "\"\"\"\n记忆系统实现\n包含工作记忆（短期）和长期记忆（向量存储）\n支持记忆巩固、检索和遗忘机制\n\"\"\"\nimport json\nimport hashlib\nfrom datetime import datetime\nfrom typing import List, Dict, Any, Optional\nfrom dataclasses import dataclass, asdict\nimport numpy as np\nfrom openai import AsyncOpenAI\nimport chromadb\nfrom chromadb.config import Settings as ChromaSettings\n\nfrom config.settings import settings\n\n\n@dataclass\nclass MemoryItem:\n    \"\"\"记忆单元\"\"\"\n    content: str\n    timestamp: datetime\n    importance: float  # 0-1，用于记忆巩固\n    memory_type: str  # \"observation\", \"action\", \"reflection\", \"fact\"\n    metadata: Dict[str, Any]\n    embedding: Optional[List[float]] = None\n    \n    def to_dict(self) -> Dict:\n        data = asdict(self)\n        data['timestamp'] = self.timestamp.isoformat()\n        return data\n\n\nclass WorkingMemory:\n    \"\"\"\n    工作记忆（短期记忆）\n    有限容量，FIFO + 重要性加权保留\n    \"\"\"\n    def __init__(self, capacity: int = 10):\n        self.capacity = capacity\n        self.memories: List[MemoryItem] = []\n        self.current_context: str = \"\"\n    \n    def add(self, item: MemoryItem) -> None:\n        \"\"\"添加记忆，超出容量时移除低重要性旧记忆\"\"\"\n        self.memories.append(item)\n        if len(self.memories) > self.capacity:\n            # 按重要性排序，保留重要的\n            self.memories.sort(key=lambda x: x.importance, reverse=True)\n            self.memories = self.memories[:self.capacity]\n    \n    def get_context(self, n_recent: int = 5) -> str:\n        \"\"\"获取最近N条记忆的文本上下文\"\"\"\n        recent = self.memories[-n_recent:] if len(self.memories) > n_recent else self.memories\n        return \"\\n\".join([f\"[{m.memory_type}] {m.content}\" for m in recent])\n    \n    def clear(self) -> None:\n        \"\"\"清空工作记忆（如完成任务后）\"\"\"\n        self.memories.clear()\n\n\nclass LongTermMemory:\n    \"\"\"\n    长期记忆系统\n    基于向量数据库的语义检索\n    \"\"\"\n    def __init__(self):\n        self.client = AsyncOpenAI(api_key=settings.openai_api_key)\n        # 初始化ChromaDB\n        self.chroma_client = chromadb.PersistentClient(\n            path=settings.vector_db_path,\n            settings=ChromaSettings(anonymized_telemetry=False)\n        )\n        self.collection = self.chroma_client.get_or_create_collection(\n            name=\"agi_memories\",\n            metadata={\"hnsw:space\": \"cosine\"}\n        )\n    \n    async def add_memory(self, item: MemoryItem) -> None:\n        \"\"\"添加长期记忆并生成embedding\"\"\"\n        # 生成embedding\n        response = await self.client.embeddings.create(\n            model=settings.embedding_model,\n            input=item.content\n        )\n        embedding = response.data[0].embedding\n        \n        # 生成唯一ID\n        memory_id = hashlib.md5(\n            f\"{item.content}{item.timestamp}\".encode()\n        ).hexdigest()\n        \n        # 存储到向量数据库\n        self.collection.add(\n            embeddings=[embedding],\n            documents=[item.content],\n            metad
