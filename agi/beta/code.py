@@ -4,8 +4,16 @@
 {
     "files": [
         {
-            "filename": "agent.py",
-            "content": "# agent.py\n\nimport openai\n\nclass AGIAgent:\n    def __init__(self, api_key):\n        self.api_key = api_key\n        openai.api_key = self.api_key\n\n    def process_input(self, user_input):\n        # Implement input processing here\n        # For now, just return the input\n        return user_input\n\n    def generate_response(self, processed_input):\n        response = openai.Completion.create(\n            engine=\"text-davinci-003\",  # Use a suitable OpenAI engine\n            prompt=processed_input,\n            max_tokens=150,  # Adjust as needed\n            temperature=0.7  # Adjust for creativity\n        )\n        return response.choices[0].text\n\n    def interact(self):\n        while True:\n            user_input = input(\"You: \")\n            if user_input.lower() == \"exit\":\n                break\n\n            processed_input = self.process_input(user_input)\n            response = self.generate_response(processed_input)\n            print(\"AGI:\", response)\n\n# Example usage:\n# Replace 'YOUR_API_KEY' with your OpenAI API key\nagent = AGIAgent(api_key='YOUR_API_KEY')\nagent.interact()"
+            "filename": "agi.py",
+            "content": "# agi.py\n\nimport openai\nfrom flask import Flask, request, jsonify\n\n# Initialize the OpenAI API client\nopenai.api_key = 'your-api-key-here'\n\napp = Flask(__name__)\n\n\n# Endpoint to generate text based on user input\n@app.route('/generate', methods=['POST'])\n\ndef generate_text):\n    data = request.get_json()\n    prompt = data.get('prompt')\n    max_tokens = data.get('max_tokens', 50)\n\n    # Call the OpenAI API to generate text\n    response = openai.Completion.create(\n        engine='text-davinci-002',\n        prompt=prompt,\n        max_tokens=max_tokens\n    )\n    return jsonify({'text': response.choices[0].text.strip()})\n\n\n# Run the Flask app\nif __name__ == '__main__':\n    app.run(debug=True)\n"
+        },
+        {
+            "filename": "requirements.txt",
+            "content": "Flask==2.0.3\nopenai==0.27.0\n"
+        },
+        {
+            "filename": "README.md",
+            "content": "# AGI Project\n\nThis project aims to create an Artificial General Intelligence (AGI) using the OpenAI API.\n\n## Features\n- Uses OpenAI's GPT-3 model to generate text based on user prompts.\n\n## Installation\n\nTo install the required packages, run:\n\n    pip install -r requirements.txt\n\n## Usage\n\nSend a POST request to the `/generate` endpoint with a JSON payload containing a `prompt` and an optional `max_tokens` field.\n\nExample Request:\n\n    POST /generate\n    Content-Type: application/json\n\n    {\n        \"prompt\": \"Explain the concept of AGI in simple terms\",\n        \"max_tokens\": 100\n    }\n\nExample Response:\n\n    {\n        \"text\": \"AGI, or Artificial General Intelligence, is a field of AI research that aims to create machines capable of general intelligence. This means that these machines would be able to understand, learn, and apply knowledge across a wide range of tasks and domains, much like humans do.\"\n    }\n\n## Contributing\n\nContributions are welcome! Please read the contributing guidelines before submitting a pull request.\n"
         }
     ]
 }
