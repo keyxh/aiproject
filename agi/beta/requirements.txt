@@ -1,1 +1,2 @@
-openai\npip==23.1
+openai
+python-dotenv
