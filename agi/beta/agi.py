@@ -1,53 +1,54 @@
-# AGI (Artificial General Intelligence) Implementation using OpenAI API
-# This is a basic framework to demonstrate how an AGI might be built using OpenAI's models.
+"""
+Core AGI module that interacts with OpenAI API.
+Implements a simple memory system for context.
+"""
 
 import openai
-import os
+from config import OPENAI_API_KEY, MODEL_NAME
 
-# Set your OpenAI API key
-openai.api_key = os.getenv('OPENAI_API_KEY')
-
-# Define the core components of the AGI system
 class AGI:
+    """
+    Artificial General Intelligence class.
+    Uses OpenAI's API to simulate intelligent behavior.
+    """
+    
     def __init__(self):
-        self.models = {
-            'gpt-3.5-turbo': 'gpt-3.5-turbo',
-            'gpt-4': 'gpt-4',
-            'text-davinci-003': 'text-davinci-003',
-            'text-curie-001': 'text-curie-001',
-            'text-babbage-001': 'text-babbage-001',
-            'text-ada-001': 'text-ada-001'
-        }
-        self.current_model = 'gpt-3.5-turbo'  # Default model
-
-    def set_model(self, model_name):
-        """Set the current model to use for interactions."""
-        if model_name in self.models:
-            self.current_model = model_name
-        else:
-            raise ValueError(f"Model {model_name} not found. Available models: {list(self.models.keys())}")
-
-    def generate_response(self, prompt):
-        """Generate a response using the selected model."""
+        """Initialize the AGI with OpenAI client and memory."""
+        self.client = openai.OpenAI(api_key=OPENAI_API_KEY)
+        self.model = MODEL_NAME
+        self.memory = []  # Simple list to store conversation history
+        
+    def think(self, prompt):
+        """
+        Process the user prompt and generate a response.
+        
+        Args:
+            prompt (str): The user's input.
+            
+        Returns:
+            str: The AGI's response.
+        """
+        # Add prompt to memory
+        self.memory.append({"role": "user", "content": prompt})
+        
+        # Prepare messages for API call
+        messages = self.memory
+        
         try:
-            response = openai.ChatCompletion.create(
-                model=self.current_model,
-                messages=[{"role": "user", "content": prompt}]
+            response = self.client.chat.completions.create(
+                model=self.model,
+                messages=messages,
+                max_tokens=150  # Limit response length
             )
-            return response.choices[0].message.content
+            ai_response = response.choices[0].message.content
+            
+            # Add AI response to memory
+            self.memory.append({"role": "assistant", "content": ai_response})
+            
+            return ai_response
         except Exception as e:
             return f"Error: {str(e)}"
-
-    def run(self):
-        """Run the AGI system interactively."""
-        print("AGI System Started. Type 'exit' to quit.")
-        while True:
-            user_input = input("You: ")
-            if user_input.lower() == 'exit':
-                break
-            response = self.generate_response(user_input)
-            print(f"AGI: {response}")
-
-if __name__ == "__main__":
-    agi = AGI()
-    agi.run()
+    
+    def reset_memory(self):
+        """Reset the conversation memory."""
+        self.memory = []
