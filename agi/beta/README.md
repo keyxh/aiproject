@@ -1,16 +1,58 @@
-# agi
+# AGI Project
 
-## 项目描述
-实现一个真正意义上的agi，如果使用的模型api用openai api
+This project aims to implement an Artificial General Intelligence (AGI) using the OpenAI API.
 
-## 提案执行
-- 提案标题：技术方案提案
-- 描述：基于项目'agi'的需求分析
-- 技术方案：需要进一步分析确定具体技术方案
-- 预期结果：完成项目核心功能开发
+## Features
 
-## 开发状态
-代码生成遇到问题，需要人工介入完善。
+- Interactive chat with the AGI agent.
+- Conversation memory persistence.
+- Basic task execution capabilities.
+- Extensible design for future enhancements.
 
-## 下一步
-根据提案内容继续开发。
+## Installation
+
+1. Clone the repository:
+   ```bash
+   git clone <repository-url>
+   cd agi
+   ```
+
+2. Install dependencies:
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+3. Set up environment variables:
+   - Create a `.env` file in the project root.
+   - Add your OpenAI API key:
+     ```
+     OPENAI_API_KEY=your_openai_api_key_here
+     ```
+
+## Usage
+
+Run the main script to start an interactive session:
+
+```bash
+python main.py
+```
+
+Type your messages, and the AGI will respond. Type 'exit' to quit.
+
+## Project Structure
+
+- `main.py`: Entry point for the AGI system.
+- `agi_core.py`: Core AGI logic and OpenAI API integration.
+- `config.py`: Configuration management.
+- `utils.py`: Utility functions.
+- `memory.json`: Stores conversation history (auto-generated).
+
+## Future Work
+
+- Add learning mechanisms.
+- Integrate with external tools and APIs.
+- Implement more advanced memory and reasoning.
+
+## License
+
+This project is licensed under the MIT License.
