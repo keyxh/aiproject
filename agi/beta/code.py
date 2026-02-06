@@ -2,11 +2,11 @@
 
 ```json
 {
-  "files": [
-    {
-      "filename": "main.py",
-      "content": "# This is a basic example of interacting with the OpenAI API\n\nimport openai\n\n# Set your OpenAI API key\nopenai.api_key = \"YOUR_API_KEY\"\n\n# Define a function to get a response from the OpenAI API\ndef get_response(prompt):\n    response = openai.Completion.create(\n        engine=\"text-davinci-003\",  # Replace with your desired engine\n        prompt=prompt,\n        max_tokens=100  # Adjust as needed\n    )\n    return response.choices[0].text\n\n# Example usage:\nuser_input = input(\"You: \")\nresponse = get_response(user_input)\nprint(\"AGI: \" + response)\n"
-    }
-  ]
+    "files": [
+        {
+            "filename": "agi_prototype.py",
+            "content": "# agi_prototype.py\n\nimport openai\n\n# Set your OpenAI API key\nopenai.api_key = \"YOUR_API_KEY\"\n\nclass AGIPrototype:\n    def __init__(self):\n        pass\n\n    def process_input(self, user_input):\n        \"\"\"\n        Processes user input and generates a response using the OpenAI API.\n\n        Args:\n            user_input (str): The user's input text.\n\n        Returns:\n            str: The AGI's response.\n        \"\"\"\n        response = openai.Completion.create(\n            engine=\"text-davinci-003\",  # Or another suitable engine\n            prompt=user_input,\n            max_tokens=100,\n            temperature=0.7\n        )\n        return response.choices[0].text\n\nif __name__ == '__main__':\n    agi = AGIPrototype()\n    while True:\n        user_input = input(\"You: \")\n        if user_input.lower() == \"exit\":\n            break\n        response = agi.process_input(user_input)\n        print(\"AGI:\", response)"
+        }
+    ]
 }
 ```
