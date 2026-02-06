@@ -1,12 +1,7 @@
 # agi
 
-```json
-{
-    "files": [
-        {
-            "filename": "agent.py",
-            "content": "# agent.py\n\nimport openai\n\nclass AGIAgent:\n    def __init__(self, api_key):\n        self.api_key = api_key\n        openai.api_key = self.api_key\n\n    def think(self, prompt):\n        \"\"\"\n        Uses the OpenAI API to generate a response to a given prompt.\n\n        Args:\n            prompt (str): The input prompt for the AI.\n\n        Returns:\n            str: The AI's response to the prompt.\n        \"\"\"\n        response = openai.Completion.create(\n            engine=\"text-davinci-003\",  # Use a suitable OpenAI engine\n            prompt=prompt,\n            max_tokens=150,  # Adjust as needed\n            temperature=0.7  # Adjust for creativity\n        )\n        return response.choices[0].text.strip()\n\n# Example usage\nagent = AGIAgent(\"YOUR_API_KEY\")\nresponse = agent.think(\"What is the meaning of life?\")\nprint(response)\n"
-        }
-    ]
-}
-```
+ "files": [
+    {
+      "filename": "main.py",
+      "content": "'''\nAGI系统的主要入口点。\n\n说明：这是一个模拟AGI系统的简单示例，其中使用了OpenAI API作为模型。\n''\"\n\n\"\"\"\nAGI系统的主要入口点。\n\n说明：这是一个模拟AGI系统的简单示例，其中使用了OpenAI API作为模型。\n\"\"\"\ndef main():\n    # 初始化OpenAI模型\n    openai_api_key = \"your-api-key\"\n    openai.Model = \"your-model\"\n    openai.api_key = openai_api_key\n\n    # 示例 AGI 操作\n    # 用户输入\n    user_input = input(\"请输入您的问题：\")\n    \n    # 使用模型处理输入\n    response = openai.Completion.create(\n        engine=openai.Model,\n        prompt=user_input,\n        max_tokens=150\n    )\n    \n    # 输出模型的响应\n    print(\"模型的响应：\", response.choices[0].text.strip())\n\nif __name__ == \"__main__\":\n    main()\n"
+]
