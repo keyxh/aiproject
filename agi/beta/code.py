@@ -2,71 +2,30 @@
 
 ```json
 {
-  "files": [
-    {
-      "filename": "agi.py",
-      "content": "
-import os
-import json
-import requests
+    "files": [
+        {
+            "filename": "agi.py",
+            "content": "import openai
 
-class AGI:
-  def __init__(self, api_key):
-    self.api_key = api_key
-    self.api_url = 'https://api.openai.com/v1'
+# 初始化OpenAI API客户端
+openai.api_key = 'your_openai_api_key'
 
-  def get_response(self, prompt):
-    headers = {
-      'Authorization': f'Bearer {self.api_key}',
-      'Content-Type': 'application/json'
-    }
-    data = {
-      'prompt': prompt,
-      'max_tokens': 2048,
-      'temperature': 0.7
-    }
-    response = requests.post(f'{self.api_url}/completions', headers=headers, data=json.dumps(data))
-    return response.json()['choices'][0]['text']
-
-  def train(self, data):
-    # TODO: implement training logic
-    pass
-
-  def evaluate(self, data):
-    # TODO: implement evaluation logic
-    pass
-
-def main():
-  api_key = os.environ['OPENAI_API_KEY']
-  agi = AGI(api_key)
-  prompt = 'Hello, how are you?'
-  response = agi.get_response(prompt)
-  print(response)
+def generate_response(prompt):
+    # 调用OpenAI的文本生成API
+    response = openai.Completion.create(
+        engine='text-davinci-003',
+        prompt=prompt,
+        max_tokens=150  # 设置返回的最大字符数
+    )
+    # 返回生成的文本
+    return response.choices[0].text.strip()
 
 if __name__ == '__main__':
-  main()
-"
-    },
-    {
-      "filename": "requirements.txt",
-      "content": "
-requests
-json
-os
-"
-    },
-    {
-      "filename": "README.md",
-      "content": "
-# AGI Project
-This project aims to implement a truly general artificial intelligence using the OpenAI API.
-
-## Getting Started
-1. Install the required packages: `pip install -r requirements.txt`
-2. Set the `OPENAI_API_KEY` environment variable
-3. Run the project: `python agi.py`
-"
-    }
-  ]
+    # 示例：生成一段文本
+    user_input = input('请输入您想要生成的文本：')
+    generated_text = generate_response(user_input)
+    print('生成的文本：\n', generated_text)"
+        }
+    ]
 }
 ```
