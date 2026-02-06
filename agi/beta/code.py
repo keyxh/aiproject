@@ -5,15 +5,11 @@
     "files": [
         {
             "filename": "agi.py",
-            "content": "# agi.py\n\nimport openai\nfrom fastapi import FastAPI\nfrom pydantic import BaseModel\n\n# OpenAI API Key\nopenai.api_key = 'your-api-key'\n\n# Create FastAPI application\napp = FastAPI()\n\n# Define a Pydantic model for incoming data\nclass Prompt(BaseModel):\n    prompt: str\n    max_tokens: int = 150\n\n# Endpoint to generate text using OpenAI's GPT-3\n@app.post("/generate-text/")\nasync def generate_text(prompt: Prompt):\n    response = openai.Completion.create(\n        engine='text-davinci-002',\n        prompt=prompt.prompt,\n        max_tokens=prompt.max_tokens\n    )\n    return {'text': response.choices[0].text.strip()}\n"
+            "content": "# agi.py\n\nimport openai\nfrom flask import Flask, request, jsonify\n\napp = Flask(__name__)\n\n# Set your OpenAI API key\nopenai.api_key = 'your-api-key'\n\n\n@app.route('/generate', methods=['POST'])\ndef generate_response():\n    data = request.get_json()\n    prompt = data.get('prompt', '')\n    max_tokens = data.get('max_tokens', 50)\n\n    # Ensure that the prompt and max_tokens are provided\n    if not prompt or not isinstance(max_tokens, int) or max_tokens <= 0:\n        return jsonify({'error': 'Invalid request'}), 400\n\n    # Call the OpenAI API to generate a response\n    response = openai.Completion.create(\n        engine='text-davinci-002',  # or the engine you prefer\n        prompt=prompt,\n        max_tokens=max_tokens\n    )\n\n    return jsonify({'response': response.choices[0].text.strip()}), 200\n\nif __name__ == '__main__':\n    app.run(debug=True)\n"
         },
         {
             "filename": "requirements.txt",
-            "content": "fastapi==0.71.1\npydantic==1.10.0\nopenai\n"
-        },
-        {
-            "filename": "README.md",
-            "content": "# AGI Project\n\nThis project aims to create a true artificial general intelligence (AGI) using the OpenAI API.\n\n## Overview\n\nThe project is structured as follows:\n\n- `agi.py`: The main application file that handles the OpenAI API integration and provides an endpoint to generate text.\n- `requirements.txt`: Lists the project dependencies.\n\n## Setup\n\nTo get started, clone the repository and install the dependencies:\n\n```bash\npip install -r requirements.txt\n```\n\n## Usage\n\nTo generate text, send a POST request to the `/generate-text/` endpoint with a JSON payload containing the `prompt` and optional `max_tokens`.\n\nExample:\n\n```json\n{\n    \"prompt\": \"What is the future of artificial intelligence?\",\n    \"max_tokens\": 200\n}\n```"
+            "content": "Flask==2.0.1\nopenai==0.27.0\n"
         }
     ]
 }
