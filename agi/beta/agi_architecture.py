@@ -1,164 +1,151 @@
 import os
-import json
+import logging
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Optional
+from typing import Dict, Any, List, Optional
 from dataclasses import dataclass
-from openai import OpenAI
+import openai
 
-
-class AGIComponent(ABC):
-    """抽象基类，定义AGI系统中所有组件的通用接口。"""
-    
-    @abstractmethod
-    def process(self, input_data: Any) -> Any:
-        pass
+# 配置日志
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 
 @dataclass
 class AGIConfig:
-    """AGI系统的配置数据类。"""
+    """AGI系统配置类"""
     openai_api_key: str
-    model_name: str = "gpt-4o"
-    max_tokens: int = 1024
+    model_name: str = "gpt-4"
     temperature: float = 0.7
-    memory_enabled: bool = True
-    reasoning_enabled: bool = True
+    max_tokens: int = 2000
+    memory_window_size: int = 10
 
 
-class MemoryModule(AGIComponent):
-    """记忆模块：负责短期和长期记忆管理。"""
+class MemoryModule(ABC):
+    """记忆模块抽象基类"""
     
-    def __init__(self):
-        self.short_term_memory: List[Dict] = []
-        self.long_term_memory: Dict[str, Any] = {}
+    @abstractmethod
+    def store(self, content: str, metadata: Optional[Dict[str, Any]] = None) -> None:
+        pass
     
-    def store(self, key: str, value: Any, memory_type: str = "short"):
-        if memory_type == "short":
-            self.short_term_memory.append({"key": key, "value": value})
-        elif memory_type == "long":
-            self.long_term_memory[key] = value
+    @abstractmethod
+    def retrieve(self, query: str, limit: int = 5) -> List[Dict[str, Any]]:
+        pass
     
-    def retrieve(self, key: str, memory_type: str = "short") -> Optional[Any]:
-        if memory_type == "short":
-            for item in reversed(self.short_term_memory):
-                if item["key"] == key:
-                    return item["value"]
-        elif memory_type == "long" and key in self.long_term_memory:
-            return self.long_term_memory[key]
-        return None
-    
-    def process(self, input_data: Any) -> Any:
-        # 此处可扩展为自动记忆提取逻辑
-        return input_data
+    @abstractmethod
+    def clear(self) -> None:
+        pass
 
 
-class ReasoningModule(AGIComponent):
-    """推理模块：基于输入和记忆进行逻辑推理。"""
+class ShortTermMemory(MemoryModule):
+    """短期记忆实现 - 基于对话历史"""
     
-    def __init__(self, client: OpenAI, config: AGIConfig):
-        self.client = client
-        self.config = config
+    def __init__(self, window_size: int = 10):
+        self.window_size = window_size
+        self.history: List[Dict[str, str]] = []
     
-    def process(self, input_data: Dict[str, Any]) -> str:
-        prompt = f"""
-        You are an advanced reasoning engine.
-        Context: {input_data.get('context', '')}
-        Task: {input_data.get('task', '')}
-        Previous interactions: {input_data.get('history', [])}
-        Provide a clear, step-by-step reasoning to solve the task.
-        """
-        
-        response = self.client.chat.completions.create(
-            model=self.config.model_name,
-            messages=[{"role": "user", "content": prompt}],
-            max_tokens=self.config.max_tokens,
-            temperature=self.config.temperature
-        )
-        return response.choices[0].message.content.strip()
+    def store(self, content: str, metadata: Optional[Dict[str, Any]] = None) -> None:
+        role = metadata.get("role", "user") if metadata else "user"
+        self.history.append({"role": role, "content": content})
+        # 保持窗口大小
+        if len(self.history) > self.window_size:
+            self.history.pop(0)
+    
+    def retrieve(self, query: str, limit: int = 5) -> List[Dict[str, Any]]:
+        return self.history[-limit:] if self.history else []
+    
+    def clear(self) -> None:
+        self.history.clear()
 
 
-class ActionModule(AGIComponent):
-    """行动模块：将推理结果转化为具体行动或输出。"""
+class ReasoningEngine(ABC):
+    """推理引擎抽象基类"""
     
-    def __init__(self, client: OpenAI, config: AGIConfig):
-        self.client = client
-        self.config = config
-    
-    def process(self, reasoning_output: str) -> str:
-        prompt = f"""
-        Based on the following reasoning, generate a concise and actionable response:
-        {reasoning_output}
-        """
-        
-        response = self.client.chat.completions.create(
-            model=self.config.model_name,
-            messages=[{"role": "user", "content": prompt}],
-            max_tokens=self.config.max_tokens,
-            temperature=self.config.temperature
-        )
-        return response.choices[0].message.content.strip()
+    @abstractmethod
+    def process(self, input_text: str, context: List[Dict[str, str]]) -> str:
+        pass
 
 
-class AGICore:
-    """AGI核心协调器，整合各模块形成统一系统。"""
+class OpenAIReasoningEngine(ReasoningEngine):
+    """基于OpenAI API的推理引擎"""
     
     def __init__(self, config: AGIConfig):
         self.config = config
-        self.client = OpenAI(api_key=config.openai_api_key)
-        
-        self.memory = MemoryModule() if config.memory_enabled else None
-        self.reasoner = ReasoningModule(self.client, config) if config.reasoning_enabled else None
-        self.action_module = ActionModule(self.client, config)
-        
-        self.conversation_history: List[Dict] = []
+        openai.api_key = config.openai_api_key
     
-    def interact(self, user_input: str) -> str:
-        # 存储用户输入到短期记忆
-        if self.memory:
-            self.memory.store("user_input", user_input, "short")
-            self.conversation_history.append({"role": "user", "content": user_input})
-        
-        # 构建推理输入
-        reasoning_input = {
-            "task": user_input,
-            "context": "",
-            "history": self.conversation_history[-5:] if len(self.conversation_history) > 5 else self.conversation_history
-        }
-        
-        # 推理
-        if self.reasoner:
-            reasoning_result = self.reasoner.process(reasoning_input)
-        else:
-            reasoning_result = user_input  # 直通模式
-        
-        # 行动（生成最终响应）
-        final_response = self.action_module.process(reasoning_result)
-        
-        # 存储AI响应
-        if self.memory:
-            self.memory.store("ai_response", final_response, "short")
-            self.conversation_history.append({"role": "assistant", "content": final_response})
-        
-        return final_response
+    def process(self, input_text: str, context: List[Dict[str, str]]) -> str:
+        try:
+            messages = context + [{"role": "user", "content": input_text}]
+            response = openai.ChatCompletion.create(
+                model=self.config.model_name,
+                messages=messages,
+                temperature=self.config.temperature,
+                max_tokens=self.config.max_tokens
+            )
+            return response.choices[0].message["content"].strip()
+        except Exception as e:
+            logger.error(f"OpenAI API error: {e}")
+            raise
 
 
-def main():
-    """示例主函数，展示如何初始化和使用AGI系统。"""
+class AGICore:
+    """AGI核心系统"""
+    
+    def __init__(self, config: AGIConfig):
+        self.config = config
+        self.memory = ShortTermMemory(window_size=config.memory_window_size)
+        self.reasoning_engine = OpenAIReasoningEngine(config)
+    
+    def process_input(self, user_input: str) -> str:
+        """处理用户输入并返回响应"""
+        # 从记忆中检索上下文
+        context = self.memory.retrieve(user_input)
+        
+        # 使用推理引擎处理
+        response = self.reasoning_engine.process(user_input, context)
+        
+        # 存储交互到记忆
+        self.memory.store(user_input, {"role": "user"})
+        self.memory.store(response, {"role": "assistant"})
+        
+        return response
+    
+    def reset_memory(self) -> None:
+        """重置记忆"""
+        self.memory.clear()
+
+
+def create_agi_system() -> AGICore:
+    """工厂函数：创建AGI系统实例"""
     api_key = os.getenv("OPENAI_API_KEY")
     if not api_key:
-        raise ValueError("请设置环境变量 OPENAI_API_KEY")
+        raise ValueError("OPENAI_API_KEY environment variable is required")
     
-    config = AGIConfig(openai_api_key=api_key)
-    agi = AGICore(config)
+    config = AGIConfig(
+        openai_api_key=api_key,
+        model_name=os.getenv("AGI_MODEL_NAME", "gpt-4"),
+        temperature=float(os.getenv("AGI_TEMPERATURE", "0.7")),
+        max_tokens=int(os.getenv("AGI_MAX_TOKENS", "2000")),
+        memory_window_size=int(os.getenv("AGI_MEMORY_WINDOW", "10"))
+    )
     
-    print("AGI系统已启动。输入 'quit' 退出。")
-    while True:
-        user_input = input("你: ")
-        if user_input.lower() == "quit":
-            break
-        response = agi.interact(user_input)
-        print(f"AGI: {response}")
+    return AGICore(config)
 
 
+# 使用示例
 if __name__ == "__main__":
-    main()
+    # 确保设置了OPENAI_API_KEY环境变量
+    try:
+        agi = create_agi_system()
+        
+        # 简单交互循环
+        print("AGI系统已启动。输入'quit'退出。")
+        while True:
+            user_input = input("\n用户: ")
+            if user_input.lower() in ['quit', 'exit']:
+                break
+            
+            response = agi.process_input(user_input)
+            print(f"AGI: {response}")
+            
+    except Exception as e:
+        logger.error(f"AGI系统错误: {e}")
