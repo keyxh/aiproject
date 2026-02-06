@@ -1,5 +1,5 @@
-# AGI Implementation using OpenAI API
-# This file contains the core logic for the AGI system
+# AGI (Artificial General Intelligence) Implementation using OpenAI API
+# This file contains the core logic for interacting with the OpenAI API to simulate AGI behavior
 
 import openai
 import os
@@ -11,32 +11,46 @@ load_dotenv()
 # Set up OpenAI API key
 openai.api_key = os.getenv('OPENAI_API_KEY')
 
-# Define a class for the AGI system
+# Define a class for AGI system
 class AGI:
-    def __init__(self):
-        self.model = 'gpt-3.5-turbo'  # Using GPT-3.5 Turbo as the base model
+    def __init__(self, model_name="gpt-3.5-turbo"):
+        self.model_name = model_name
 
     def generate_response(self, prompt):
-        """Generate a response to the given prompt using the OpenAI API."""
+        """Generate a response based on the given prompt using OpenAI's GPT model.
+
+        Args:
+            prompt (str): The input prompt to the AGI system.
+
+        Returns:
+            str: The generated response from the AGI system.
+        """
         try:
             response = openai.ChatCompletion.create(
-                model=self.model,
-                messages=[{'role': 'user', 'content': prompt}]
+                model=self.model_name,
+                messages=[{"role": "user", "content": prompt}]
             )
-            return response['choices'][0]['message']['content']
+            return response.choices[0].message.content
         except Exception as e:
-            return f"Error: {str(e)}"
+            return f"Error generating response: {str(e)}"
 
-    def run(self):
-        """Main loop for the AGI system."""
-        print("AGI System Started. Type 'exit' to quit.")
-        while True:
-            user_input = input("You: ")
-            if user_input.lower() == 'exit':
-                break
-            response = self.generate_response(user_input)
-            print(f"AGI: {response}")
+    def train(self, training_data):
+        """Train the AGI model with provided training data.
 
+        Args:
+            training_data (list of tuples): List of (input, output) pairs for training.
+
+        Returns:
+            str: Status message indicating the training process.
+        """
+        # Note: OpenAI does not support direct training of models, so this is a placeholder
+        # In a real-world scenario, you might use fine-tuning or other methods.
+        return "Training is not supported directly by OpenAI's API. Consider using fine-tuning if applicable."
+
+# Example usage
 if __name__ == "__main__":
     agi = AGI()
-    agi.run()
+    user_input = "Explain the concept of artificial general intelligence."
+    response = agi.generate_response(user_input)
+    print(f"User: {user_input}")
+    print(f"AGI: {response}")
