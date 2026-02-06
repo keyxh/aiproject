@@ -3,69 +3,78 @@ import os
 from typing import List, Dict, Any
 
 # 配置OpenAI API密钥
-os.environ["OPENAI_API_KEY"] = "your_api_key_here"  # 请替换为你的实际API密钥
+os.environ["OPENAI_API_KEY"] = "your_openai_api_key_here"  # 替换为你的实际API密钥
 
 # 初始化OpenAI客户端
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
 class AGIEngine:
     """
-    AGI引擎核心类，负责与OpenAI API交互，模拟通用人工智能行为。
+    AGI引擎核心类，封装与OpenAI API交互逻辑，支持多轮对话、上下文管理、任务分解等。
     """
-    def __init__(self):
+    def __init__(self, model: str = "gpt-4", temperature: float = 0.7):
+        self.model = model
+        self.temperature = temperature
         self.conversation_history: List[Dict[str, Any]] = []
 
-    def send_message(self, user_input: str) -> str:
+    def add_message(self, role: str, content: str):
         """
-        向OpenAI模型发送用户消息并返回响应。
-        :param user_input: 用户输入的文本
+        添加一条对话消息到历史记录中。
+        :param role: "user" 或 "assistant"
+        :param content: 消息内容
+        """
+        self.conversation_history.append({"role": role, "content": content})
+
+    def get_response(self, prompt: str) -> str:
+        """
+        向OpenAI模型发送请求并获取响应。
+        :param prompt: 用户输入或系统提示
         :return: 模型生成的响应文本
         """
-        # 添加用户消息到对话历史
-        self.conversation_history.append({"role": "user", "content": user_input})
+        # 将历史对话添加到上下文中
+        messages = self.conversation_history + [{"role": "user", "content": prompt}]
 
-        # 调用OpenAI API
-        response = openai.ChatCompletion.create(
-            model="gpt-4",  # 或者使用 "gpt-3.5-turbo" 以节省成本
-            messages=self.conversation_history,
-            temperature=0.7,
-            max_tokens=150
-        )
-
-        # 获取模型响应
-        assistant_response = response.choices[0].message.content
-
-        # 添加模型响应到对话历史
-        self.conversation_history.append({"role": "assistant", "content": assistant_response})
-
-        return assistant_response
+        try:
+            response = openai.ChatCompletion.create(
+                model=self.model,
+                messages=messages,
+                temperature=self.temperature,
+                max_tokens=1500
+            )
+            reply = response.choices[0].message.content
+            self.add_message("assistant", reply)
+            return reply
+        except Exception as e:
+            return f"Error: {str(e)}"
 
     def reset_conversation(self):
         """
-        重置对话历史，开始新的对话。
+        重置对话历史。
         """
-        self.conversation_history.clear()
+        self.conversation_history = []
 
-    def get_conversation_history(self) -> List[Dict[str, Any]]:
+    def set_system_prompt(self, system_prompt: str):
         """
-        获取当前对话历史。
-        :return: 对话历史列表
+        设置系统提示词，用于引导模型行为。
+        :param system_prompt: 系统提示内容
         """
-        return self.conversation_history
+        self.conversation_history.insert(0, {"role": "system", "content": system_prompt})
 
 # 示例使用
 if __name__ == "__main__":
-    agi = AGIEngine()
+    # 初始化AGI引擎
+    agi = AGIEngine(model="gpt-4", temperature=0.7)
     
-    print("欢迎使用AGI引擎！输入 'quit' 退出。")
+    # 设置系统提示
+    agi.set_system_prompt("你是一个具有深度思考能力的AGI助手，能够处理复杂任务并提供高质量解决方案。")
+    
+    # 与用户交互
+    print("欢迎使用AGI助手！输入 'quit' 退出。")
     while True:
         user_input = input("用户: ")
         if user_input.lower() == "quit":
             print("再见！")
             break
         
-        response = agi.send_message(user_input)
+        response = agi.get_response(user_input)
         print(f"AGI: {response}")
-        
-        # 可选：打印当前对话历史
-        # print("对话历史:", agi.get_conversation_history())
