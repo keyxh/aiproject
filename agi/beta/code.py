@@ -5,7 +5,7 @@
     "files": [
         {
             "filename": "agi.py",
-            "content": "# agi.py\n\nimport openai\nfrom flask import Flask, request, jsonify\n\napp = Flask(__name__)\n\n# 设置OpenAI API密钥\nopenai.api_key = 'your-api-key'\n\n\n\n@app.route('/generate', methods=['POST'])\n\ndef generate_response):\n    # 获取用户输入的数据\n    data = request.get_json()\n    prompt = data.get('prompt')\n    if not prompt:\n        return jsonify({'error': 'No prompt provided'}), 400\n\n    # 使用OpenAI GPT-3 API生成响应\n    response = openai.Completion.create(\n        engine='text-davinci-002',\n        prompt=prompt,\n        max_tokens=150\n    )\n    return jsonify({'response': response.choices[0].text.strip()}), 200\n\n\nif __name__ == '__main__':\n    app.run(debug=True)\n"
+            "content": "# agi.py\n\nimport openai\nfrom flask import Flask, request, jsonify\n\napp = Flask(__name__)\n\n# OpenAI API Key\nAPI_KEY = 'your-openai-api-key'\n\n# Initialize OpenAI client\nopenai.api_key = API_KEY\n\n\n\n@app.route('/generate', methods=['POST'])\n\ndef generate_response):\n    # Get the input text from the request\n    data = request.get_json()\n    if 'prompt' not in data:\n        return jsonify({'error': 'Missing prompt in request'}), 400\n    prompt = data['prompt']\n\n    # Generate a response using OpenAI's GPT-3 model\n    response = openai.Completion.create(\n        engine='text-davinci-002',\n        prompt=prompt,\n        max_tokens=150\n    )\n\n    # Return the generated response\n    return jsonify({'response': response.choices[0].text.strip()}), 200\n\n\nif __name__ == '__main__':\n    app.run(debug=True)\n"
         },
         {
             "filename": "requirements.txt",
@@ -13,7 +13,7 @@
         },
         {
             "filename": "README.md",
-            "content": "# AGI Project\n\nThis repository contains the code for a project aiming to create an Artificial General Intelligence (AGI) using the OpenAI API.\n\n## Overview\n\nThe project includes a simple Flask web service that can accept text prompts and generate responses using the GPT-3 model provided by OpenAI.\n\n## Features\n\n- Accepts text prompts via a POST request to the `/generate` endpoint.\n- Uses the OpenAI GPT-3 API to generate responses.\n\n## Setup\n\n1. Clone the repository:\n    ```bash\n    git clone https://github.com/your-username/agi.git\n    cd agi\n    ```\n\n2. Install the required packages:\n    ```bash\n    pip install -r requirements.txt\n    ```\n\n3. Start the Flask server:\n    ```bash\n    python agi.py\n    ```\n\n4. Test the service by sending a POST request to `http://localhost:5000/generate` with a JSON body containing a `prompt` field.\n\n## License\n\nThis project is licensed under the [MIT License](https://github.com/your-username/agi/blob/main/LICENSE).\n"
+            "content": "# AGI Project\n\nThis project is an attempt to create a truly advanced AI using the OpenAI API.\n\n## Features\n\n- Uses OpenAI's GPT-3 model to generate responses\n- RESTful API endpoint to generate responses based on prompts\n\n## Setup\n\n1. Install Python 3.8 or higher\n2. Install dependencies:\n    \tpip install -r requirements.txt\n3. Run the application:\n    \tpython agi.py\n\n## Usage\n\nTo generate a response, send a POST request to the `/generate` endpoint with a JSON payload containing the `prompt` field.\n\nExample:\n\n```json\n{\n  \"prompt\": \"Tell me a joke about AI\"\n}\n```\n\n## License\n\nThis project is licensed under the MIT License.\n"
         }
     ]
 }
