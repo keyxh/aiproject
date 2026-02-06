@@ -1,11 +1,67 @@
 # agi
 
+```json
 {
-    "files": [
-        {
-            "filename": "agi/architecture/design.md",
-            "content": "# AGI 系统架构设计文档\n\n## 1. 概述\n本项目旨在构建一个具备通用认知能力的AGI（Artificial General Intelligence）系统，基于模块化、可扩展、可验证的设计原则，通过组合感知、推理、记忆、规划与执行等核心能力模块，实现跨领域任务理解与自主决策。系统以 OpenAI API 为底层模型服务（如 GPT-4o、o1-preview 等），但通过架构层抽象解耦，支持未来替换为其他大模型或自研模型。\n\n## 2. 架构总览\n```\n+------------------+     +------------------+     +------------------+\n|   Perception     |<--->|   Cognition      |<--->|   Action/Output  |\n|  (Sensors/Inputs)|     |  (Reasoning &    |     |  (Tools, APIs,   |\n+------------------+     |   Memory & Planning)|     |   Human Interface)|\n        ↑                        ↑                        ↑\n        |                        |                        |\n+------------------+     +------------------+     +------------------+\n|   World Model    |<---->|   Meta-Cognition |<---->|   Learning Loop  |\n|  (Internal State) |     | (Self-reflection,|     | (Feedback, Adapt.)|\n+------------------+     |  Goal Management)|     +------------------+\n                             +------------------+\n\n              ▲\n              |\n       +------------------+\n       |   Orchestrator   |\n       | (Control Flow &  |\n       |  Task Decomposition)|\n       +------------------+\n```\n\n## 3. 核心模块定义\n\n### 3.1 Orchestrator（调度器）\n- 负责接收用户输入/环境事件 → 解析意图 → 分解为子任务 → 分配至对应模块\n- 实现：`TaskPlanner`, `IntentClassifier`, `ExecutionScheduler`\n- 使用轻量级状态机 + 动态任务图（DAG）\n\n### 3.2 Perception（感知层）\n- 多模态输入处理（文本、图像、语音 via Whisper/OpenAI Vision）\n- 结构化提取：实体识别、事件检测、上下文摘要\n- 组件：`InputParser`, `MultimodalEncoder`, `ContextExtractor`\n\n### 3.3 Cognition（认知层）\n#### 3.3.1 Reasoning Engine\n- 链式推理（Chain-of-Thought）、树搜索（Tree-of-Thought）、反思推理（Self-Consistency）\n- 支持工具调用（Function Calling）与外部知识检索（RAG）\n\n#### 3.3.2 Memory System\n- **Short-term**: Working memory（当前会话上下文）\n- **Long-term**: Vector DB（Chroma/Pinecone）存储经验、规则、目标\n- **Episodic Memory**: 时间戳事件日志（JSONL）\n- 接口：`MemoryStore`, `MemoryRetrieval`, `MemoryConsolidation`\n\n#### 3.3.3 Planning Module\n- 目标分解 → 子任务序列生成 → 约束检查 → 回滚策略\n- 基于 LLM 的 plan generator + 符号逻辑校验器（可选）\n\n### 3.4 Action Layer（行动层）\n- 工具调用（Tool Calling）：支持函数、API、代码解释器、浏览器控制\n- 输出生成：多模态响应（text/audio/image）\n- 安全沙箱：所有执行在隔离环境中运行\n\n### 3.5 Meta-Cognition（元认知）\n- 自我监控：任务成功率、推理置信度、错误溯源\n- 目标管理：动态调整优先级、终止低效路径\n- 反思机制：定期总结经验 → 更新长期记忆\n\n### 3.6 Learning Loop（持续学习）\n- 人类反馈强化学习（RLHF）接口\n- 错误案例自动归档 → 用于微调/提示工程优化\n- 支持在线增量学习（通过 prompt tuning 或 LoRA adapter）\n\n## 4. 技术栈\n| 层级 | 技术选型 |\n|------|----------|\n| 模型服务 | OpenAI API（gpt-4o, o1-preview, dalle-3, whisper） |\n| 向量库 | ChromaDB（本地） / Pinecone（云） |\n| 缓存 | Redis（会话状态、速率限制） |\n| 执行环境 | Docker + gVisor 沙箱（安全执行代码） |\n| 编排框架 | LangChain + 自研 Orchestrator Core |\n| 监控 | Prometheus + Grafana + OpenTelemetry |\n| 部署 | Kubernetes（可选） / FastAPI + uvicorn |\n\n## 5. 关键设计原则\n1. **模块解耦**：各模块通过明确定义的接口通信（Protobuf/JSON Schema）\n2. **可验证性**：每个推理步骤输出 trace ID，支持回溯与审计\n3. **安全第一**：默认禁用危险操作；所有工具调用需经权限审批流\n4. **渐进增强**：初始版本聚焦文本推理+记忆+简单工具；后续迭代加入视觉/听觉/物理交互\n5. **人机协同**：关键决策点支持 human-in-the-loop（人工审核/修正）\n\n## 6. 初始 MVP 范围\n- ✅ 文本输入 → 意图识别 → 多步推理 → 工具调用（如搜索、计算、代码执行）\n- ✅ 长期记忆存储与检索（基于语义相似度）\n- ✅ 基础反思：失败任务自动记录并建议改进\n- ✅ 安全护栏：内容过滤、越权检测、循环防护\n\n> 注：本设计避免“黑盒AGI”，强调透明性、可控性与可解释性——真正的AGI不是更强大的LLM，而是具备**目标导向、自我建模、持续适应**能力的认知系统。\n\n---\n*Architect: AGI Core Team | Date: 2025-04-05*"
-        },
-        {
-            "filename": "agi/core/orchestrator.py",
-            "content": "from typing import Dict, List, Optional, Any, Tuple\nfrom enum import Enum\nimport uuid\nimport json\nimport logging\n\nlogger = logging.getLogger(__name__)\n\n\nclass TaskStatus(Enum):\n    PENDING = \"pending\"\n    RUNNING = \"running\"\n    COMPLETED = \"completed\"\n    FAILED = \"failed\"\n    CANCELLED = \"cancelled\"\n\n\nclass Task:\n    def __init__(self, task_id: str, description: str, dependencies: List[str] = None):\n        self.id = task_id\n        self.description = description\n        self.dependencies = dependencies or []\n        self.status = TaskStatus.PENDING\n        self.result: Optional[Any] = None\n        self.error: Optional[str] = None\n        self.metadata: Dict[str, Any] = {}\n\n\nclass Orchestrator:\n    \"\"\"\n    AGI Core Orchestrator: Manages task decomposition, scheduling, and execution flow.\n    Implements a dynamic DAG-based workflow engine with fallback and reflection capabilities.\n    \"\"\"\n\n    def __init__(self, llm_client: Any, memory_store: 'MemoryStore'):\n        self.llm_client = llm_client\n        self.memory = memory_store\n        self.tasks: Dict[str, Task] = {}\n        self.active_plan_id: Optional[str] = None\n\n    async def process_input(self, user_input: str, session_id: str) -> Dict[str, Any]:\n        \"\"\"\n        Entry point: Receive raw input → classify intent → generate plan → execute.\n        Returns structured response with trace_id for auditability.\n        \"\"\"\n        trace_id = str(uuid.uuid4())\n        logger.info(f\"[TRACE:{trace_id}] New input received: {user_input[:50]}...\")\n\n        try:\n            # Step 1: Intent Classification & Context Enrichment\n            context = await self._enrich_context(user_input, session_id)\n            intent = await self._classify_intent(user_input, context)\n\n            # Step 2: Plan Generation\n            plan = await self._generate_plan(user_input, intent, context)\n            self.active_plan_id = plan.get(\"plan_id\")\n\n            # Step 3: Execute Plan (with error handling & reflection)\n            result = await self._execute_plan(plan, trace_id)\n\n            # Step 4: Post-execution reflection\n            await self._reflect_on_execution(trace_id, plan, result)\n\n            return {\n                \"trace_id\": trace_id,\n                \"status\": \"success\",\n                \"output\": result.get(\"output\"),\n                \"plan_summary\": plan.get(\"steps\"),\n                \"metadata\": {\n                    \"intent\": intent,\n                    \"confidence\": result.get(\"confidence\", 0.8),\n                    \"reflection\": result.get(\"reflection\", \"\")\n                }\n            }\n\n        except Exception as e:\n            logger.error(f\"[TRACE:{trace_id}] Orchestrator failed: {e}\", exc_info=True)\n            return {\n                \"trace_id\": trace_id,\n                \"status\": \"error\",\n                \"error\": str(e),\n                \"recovery_suggestion\": \"System is reflecting on the error to improve next time.\"\n            }\n\n    async def _enrich_context(self, user_input: str, session_id: str) -> Dict[str, Any]:\n        \"\"\"Retrieve relevant short-term & long-term memory\"\"\"\n        short_term = await self.memory.get_session_context(session_id)\n        long_term = await self.memory.search_memory(\n            query=user_input,\n            top_k=3,\n            filters={\"session_id\": {\"$ne\": session_id}}\n        )\n        return {\n            \"short_term\": short_term,\n            \"long_term\": long_term,\n            \"current_time\": \"2025-04-05T10:30:00Z\"\n        }\n\n    async def _classify_intent(self, user_input: str, context: Dict[str, Any]) -> str:\n        prompt = f\"\"\"\nYou are an AGI Intent Classifier. Analyze the user's request in context of their history.\n\nUser Input: \"{user_input}\"\n\nRelevant Context:\n{json.dumps(context, indent=2)}\n\nClassify the primary intent from this list:\n- information_retrieval\n- problem_solving\n- creative_generation\n- tool_execution\n- goal_planning\n- meta_cognition\n\nOutput ONLY the intent label in lowercase.\n\"\"\"\n        resp = await self.llm_client.complete(\n            prompt=prompt,\n            temperature=0.1,\n            max_tokens=10\n        )\n        return resp.strip().lower()\n\n    async def _generate_plan(self, user_input: str, intent: str, context: Dict[str, Any]) -> Dict[str, Any]:\n        plan_id = str(uuid.uuid4())\n        prompt = f\"\"\"\nYou are an AGI Planner. Generate a robust, executable plan for the user request.\n\nIntent: {intent}\nUser Request: \"{user_input}\"\n\nContext:\n{json.dumps(context, indent=2)}\n\nRules:\n1. Break into atomic, verifiable steps.\n2. Each step must specify: action, required tools, expected output format.\n3. Include fallback paths for likely failures.\n4. End with a verification step.\n5. Output ONLY valid JSON with keys: plan_id, steps (list), constraints.\n\nExample step:\n{{\n  \"step_id\": \"s1\",\n  \"action\": \"search_web\",\n  \"tool\": \"bing_search\",\n  \"args\": {{\"query\": \"latest AGI benchmarks 2025\"}},\n  \"dependencies\": [],\n  \"fallback\": \"use_local_knowledge_base\"\n}}\n\"\"\"\n        resp = await self.llm_client.complete(\n            prompt=prompt,\n            temperature=0.3,\n            response_format={\"type\": \"json_object\"}\n        )\n        plan = json.loads(resp)\n        plan[\"plan_id\"] = plan_id\n        return plan\n\n    async def _execute_plan(self, plan: Dict[str, Any], trace_id: str) -> Dict[str, Any]:\n        \"\"\"Execute plan steps in dependency order with parallelization where safe.\"\"\"\n        steps = plan[\"steps\"]\n        step_results = {}\n\n        # Build dependency graph\n        graph = {step[\"step_id\"]: step for step in steps}\n        in_degree = {sid: len(step.get(\"dependencies\", [])) for sid, step in graph.items()}\n        queue = [sid for sid, deg in in_degree.items() if deg == 0]\n\n        while queue:\n            current_id = queue.pop(0)\n            step = graph[current_id]\n\n            try:\n                logger.info(f\"[TRACE:{trace_id}] Executing step {current_id}: {step['action']}\")\n                result = await self._run_step(step, trace_id)\n                step_results[current_id] = result\n\n                # Update dependencies\n                for sid, s in graph.items():\n                    if current_id in s.get(\"dependencies\", []):\n                        in_degree[sid] -= 1\n                        if in_degree[sid] == 0:\n                            queue.append(sid)\n\n            except Exception as e:\n                logger.warning(f\"[TRACE:{trace_id}] Step {current_id} failed: {e}\")\n                step_results[current_id] = {\n                    \"status\": \"failed\",\n                    \"error\": str(e),\n                    \"fallback_used\": True\n                }\n                # Trigger fallback if defined\n                if \"fallback\" in step:\n                    fallback_step = {\n                        \"step_id\": f\"{current_id}_fallback\",\n                        \"action\": step[\"fallback\"],\n                        \"tool\": step.get(\"tool\"),\n                        \"args\": step.get(\"args\", {})\n                    }\n                    try:\n                        result = await self._run_step(fallback_step, trace_id)\n                        step_results[f\"{current_id}_fallback\"] = result\n                    except Exception as fe:\n                        step_results[f\"{current_id}_fallback\"] = {\"status\": \"failed\", \"error\": str(fe)}\n\n        # Aggregate final output\n        final_output = self._aggregate_results(step_results, plan)\n        confidence = self._estimate_confidence(step_results)\n\n        return {\n            \"output\": final_output,\n            \"confidence\": confidence,\n            \"step_results\": step_results,\n            \"reflection\": \"Execution completed. Waiting for meta-cognition review.\"\n        }\n\n    async def _run_step(self, step: Dict[str, Any], trace_id: str) -> Dict[str, Any]:\n        \"\"\"Dispatch step to appropriate executor (tool, LLM, memory, etc.)\"\"\"\n        action = step[\"action\"]\n        \n        if action == \"llm_inference\":\n            return await self._execute_llm_step(step, trace_id)\n        elif action == \"search_web\":\n            return await self._execute_search_step(step, trace_id)\n        elif action == \"run_code\":\n            return await self._execute_code_step(step, trace_id)\n        elif action == \"retrieve_memory\":\n            return await self._execute_memory_step(step, trace_id)\n        else:\n            raise ValueError(f\"Unknown action: {action}\")\n\n    async def _execute_llm_step(self, step: Dict[str, Any], trace_id: str) -> Dict[str, Any]:\n        prompt = step[\"args\"].get(\"prompt\", \"\")\n        resp = await self.llm_client.complete(\n            prompt=prompt,\n            temperature=step[\"args\"].get(\"temperature\", 0.7),\n            max_tokens=step[\"args\"].get(\"max_tokens\", 512)\n        )\n        return {\"status\": \"success\", \"content\": resp}\n\n    async def _execute_search_step(self, step: Dict[str, Any], trace_id: str) -> Dict[str, Any]:\n        # Placeholder: integrate with Bing/Google API\n        query = step[\"args\"][\"query\"]\n        # Simulate search\n        return {\n            \"status\": \"success\",\n            \"results\": [\n                {\"title\": f\"Result for '{query}' (simulated)\", \"url\": \"https://example.com\", \"snippet\": \"This is a simulated search result.\"}\n            ]\n        }\n\n    async def _execute_code_step(self, step: Dict[str, Any], trace_id: str) -> Dict[str, Any]:\n        code = step[\"args\"][\"code\"]\n        # In production: run in sandboxed environment (e.g., via docker exec)\n        try:\n            # Safe eval for demo only — NEVER in prod!\n            local_vars = {}\n            exec(code, {}, local_vars)\n            output = local_vars.get(\"result\", \"No 'result' variable returned\")\n            return {\"status\": \"success\", \"output\": str(output)}\n        except Exception as e:\n            return {\"status\": \"failed\", \"error\": str(e)}\n\n
+  "files": [
+    {
+      "filename": "agi.py",
+      "content": "
+# AGI实现代码
+import os
+import json
+import requests
+
+# OpenAI API设置
+OPENAI_API_KEY = 'YOUR_OPENAI_API_KEY'
+OPENAI_API_URL = 'https://api.openai.com/v1'
+
+# AGI类定义
+class AGI:
+  def __init__(self):
+    self.api_key = OPENAI_API_KEY
+    self.api_url = OPENAI_API_URL
+
+  # 文本生成方法
+  def generate_text(self, prompt, max_tokens=1024):
+    headers = {
+      'Authorization': f'Bearer {self.api_key}',
+      'Content-Type': 'application/json'
+    }
+    data = {
+      'prompt': prompt,
+      'max_tokens': max_tokens
+    }
+    response = requests.post(f'{self.api_url}/completions', headers=headers, json=data)
+    return response.json()['choices'][0]['text']
+
+  # 对话方法
+  def converse(self, prompt):
+    response = self.generate_text(prompt)
+    return response
+
+# AGI实例化
+agi = AGI()
+
+# 示例用法
+if __name__ == '__main__':
+  prompt = 'Hello, how are you?'
+  response = agi.converse(prompt)
+  print(response)
+"
+    },
+    {
+      "filename": "requirements.txt",
+      "content": "
+requests
+"
+    },
+    {
+      "filename": "README.md",
+      "content": "
+# AGI项目
+实现一个真正意义上的AGI，如果使用的模型API用OpenAI API。
+"
+    }
+  ]
+}
+```
