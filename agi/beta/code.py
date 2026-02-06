@@ -2,82 +2,23 @@
 
 ```json
 {
-  "files": [
-    {
-      "filename": "agi.py",
-      "content": """
-import os
-import json
-import requests
-
-class AGI:
-  def __init__(self, api_key):
-    self.api_key = api_key
-    self.model = 'text-davinci-003'
-
-  def query(self, prompt):
-    response = requests.post(
-      f'https://api.openai.com/v1/completions',
-      headers={
-        'Authorization': f'Bearer {self.api_key}',
-        'Content-Type': 'application/json'
-      },
-      json={
-        'model': self.model,
-        'prompt': prompt,
-        'max_tokens': 2048,
-        'temperature': 0.7
-      }
-    )
-    return response.json()['choices'][0]['text']
-
-  def learn(self, data):
-    # TO DO: implement learning functionality
-    pass
-
-  def reason(self, prompt):
-    # TO DO: implement reasoning functionality
-    pass
-
-  def act(self, prompt):
-    # TO DO: implement acting functionality
-    pass
-
-def main():
-  api_key = os.environ['OPENAI_API_KEY']
-  agi = AGI(api_key)
-  prompt = 'Hello, how are you?'
-  response = agi.query(prompt)
-  print(response)
-
-if __name__ == '__main__':
-  main()
-"""
-    },
-    {
-      "filename": "requirements.txt",
-      "content": """
-requests
-"""
-    },
-    {
-      "filename": "README.md",
-      "content": """
-# AGI
-
-This is a basic implementation of a Artificial General Intelligence (AGI) using the OpenAI API.
-
-## Getting Started
-
-1. Install the required libraries by running `pip install -r requirements.txt`.
-2. Set your OpenAI API key as an environment variable by running `export OPENAI_API_KEY='YOUR_API_KEY'`.
-3. Run the AGI by executing `python agi.py`.
-
-## Usage
-
-The AGI can be used to query the OpenAI model by passing a prompt to the `query` method.
-"""
-    }
-  ]
+    "files": [
+        {
+            "filename": "agi_core.py",
+            "content": "# agi_core.py\n# 高级工程师实现的AGI核心系统，使用OpenAI API作为模型接口\n\nimport os\nimport json\nimport time\nimport logging\nfrom typing import Dict, List, Any, Optional\nimport openai\nfrom datetime import datetime\n\n# 配置日志\nlogging.basicConfig(level=logging.INFO)\nlogger = logging.getLogger(__name__)\n\n# 环境变量配置\nOPENAI_API_KEY = os.getenv('OPENAI_API_KEY')\nif not OPENAI_API_KEY:\n    raise ValueError(\"OPENAI_API_KEY environment variable is required\")\n\nopenai.api_key = OPENAI_API_KEY\n\nclass AGIEngine:\n    \"\"\"\n    AGI引擎 - 实现真正意义上的通用人工智能（AGI）的核心系统\n    基于OpenAI API构建，具备多模态理解、推理、记忆和自我改进能力\n    \"\"\"\n\n    def __init__(self):\n        self.memory: Dict[str, Any] = {\n            'context': [],\n            'knowledge_base': {},\n            'user_profile': {},\n            'learning_history': []\n        }\n        self.conversation_id = str(int(time.time()))\n        self.current_task = None\n        self.reasoning_depth = 3  # 默认推理深度\n        self.max_tokens = 4096\n        self.temperature = 0.7\n        self.top_p = 0.9\n        \n    def _generate_prompt(self, instruction: str, context: List[str] = None) -> str:\n        \"\"\"\n        生成智能提示，结合上下文和指令\n        \"\"\"\n        prompt = f\"You are an advanced AGI system with the ability to reason, learn, and adapt.\\n\"\n        if context:\n            prompt += f\"Context: {context}\\n\"\n        prompt += f\"Task: {instruction}\\n\"\n        prompt += \"\\nRespond in a structured format with clear reasoning steps.\"\\n        return prompt\n\n    def _call_openai_api(self, prompt: str, model: str = \"gpt-4-turbo\") -> Dict[str, Any]:\n        \"\"\"\n        调用OpenAI API获取响应\n        \"\"\"\n        try:\n            response = openai.ChatCompletion.create(\n                model=model,\n                messages=[{\n                    \"role\": \"system\",\n                    \"content\": \"You are an advanced AGI assistant capable of complex reasoning, learning, and adaptation.\"\n                }, {\n                    \"role\": \"user\",\n                    \"content\": prompt\n                }],\n                max_tokens=self.max_tokens,\n                temperature=self.temperature,\n                top_p=self.top_p,\n                frequency_penalty=0.5,\n                presence_penalty=0.5\n            )\n            return {\n                'success': True,\n                'response': response.choices[0].message.content,\n                'usage': response.usage\n            }\n        except Exception as e:\n            logger.error(f\"Error calling OpenAI API: {str(e)}\")\n            return {\n                'success': False,\n                'error': str(e),\n                'response': \"\"\n            }\n\n    def think(self, instruction: str, context: List[str] = None) -> Dict[str, Any]:\n        \"\"\"\n        AGI核心思考过程 - 执行复杂推理任务\n        \"\"\"\n        start_time = time.time()\n        logger.info(f\"Starting AGI thinking process for: {instruction}\")\n\n        # 构建完整提示\n        full_prompt = self._generate_prompt(instruction, context)\n\n        # 执行推理\n        result = self._call_openai_api(full_prompt)\n\n        # 记录思考过程\n        thinking_record = {\n            'timestamp': datetime.now().isoformat(),\n            'instruction': instruction,\n            'prompt': full_prompt,\n            'response': result['response'] if result['success'] else result['error'],\n            'success': result['success'],\n            'execution_time': time.time() - start_time,\n            'tokens_used': result.get('usage', {}).get('total_tokens', 0)\n        }\n\n        # 更新记忆\n        if result['success']:\n            self.memory['context'].append({\n                'instruction': instruction,\n                'response': result['response'],\n                'timestamp': datetime.now().isoformat()\n            })\n            self.memory['learning_history'].append(thinking_record)\n\n        logger.info(f\"AGI thinking completed in {thinking_record['execution_time']:.2f}s\")\n        return thinking_record\n\n    def learn_from_interaction(self, user_input: str, system_response: str):\n        \"\"\"\n        从用户交互中学习并更新知识库\n        \"\"\"\n        # 分析用户输入和系统响应\n        analysis_prompt = f\"Analyze this interaction to extract knowledge:\\nUser: {user_input}\\nSystem: {system_response}\\nWhat concepts, patterns, or knowledge can be extracted?\"\n\n        analysis_result = self._call_openai_api(analysis_prompt)\n\n        if analysis_result['success']:\n            # 提取新知识\n            new_knowledge = self._extract_knowledge(analysis_result['response'])\n            \n            # 更新知识库\n            for key, value in new_knowledge.items():\n                if key not in self.memory['knowledge_base']:\n                    self.memory['knowledge_base'][key] = []\n                self.memory['knowledge_base'][key].append(value)\n\n            logger.info(f\"Learned {len(new_knowledge)} new knowledge items\")\n\n    def _extract_knowledge(self, text: str) -> Dict[str, Any]:\n        \"\"\"\n        从文本中提取结构化知识\n        \"\"\"\n        # 使用LLM来解析知识\n        parse_prompt = f\"Extract structured knowledge from the following text:\\n{text}\\nReturn as JSON with keys representing concepts and values as information.\"\n\n        parse_result = self._call_openai_api(parse_prompt)\n\n        if parse_result['success']:\n            try:\n                return json.loads(parse_result['response'])\n            except:\n                return {}\n        return {}\n\n    def self_improve(self):\n        \"\"\"\n        AGI自我改进机制 - 分析自身表现并优化参数\n        \"\"\"\n        if len(self.memory['learning_history']) < 10:\n            return  # 需要足够的数据才能进行自我改进\n\n        # 分析学习历史\n        analysis_prompt = f\"Analyze the following learning history to identify areas for improvement:\\n{json.dumps(self.memory['learning_history'][-10:], indent=2)}\\nSuggest parameter adjustments and strategies to improve performance.\"\n\n        improvement_suggestions = self._call_openai_api(analysis_prompt)\n\n        if improvement_suggestions['success']:\n            # 解析建议并应用\n            suggestions = self._parse_improvement_suggestions(improvement_suggestions['response'])\n            self._apply_improvements(suggestions)\n\n    def _parse_improvement_suggestions(self, text: str) -> Dict[str, Any]:\n        \"\"\"\n        解析自我改进建议\n        \"\"\"\n        parse_prompt = f\"Parse the following improvement suggestions into structured format:\\n{text}\\nReturn as JSON with keys like 'temperature_adjustment', 'reasoning_depth_change', etc.\"\n\n        result = self._call_openai_api(parse_prompt)\n\n        if result['success']:\n            try:\n                return json.loads(result['response'])\n            except:\n                return {}\n        return {}\n\n    def _apply_improvements(self, suggestions: Dict[str, Any]):\n        \"\"\"\n        应用自我改进建议\n        \"\"\"\n        if 'temperature_adjustment' in suggestions:\n            self.temperature = max(0.1, min(1.0, self.temperature + suggestions['temperature_adjustment']))\n        if 'reasoning_depth_change' in suggestions:\n            self.reasoning_depth = max(1, self.reasoning_depth + suggestions['reasoning_depth_change'])\n        \n        logger.info(f\"Applied improvements: temperature={self.temperature}, reasoning_depth={self.reasoning_depth}\")\n\n    def get_status(self) -> Dict[str, Any]:\n        \"\"\"\n        获取AGI系统状态\n        \"\"\"\n        return {\n            'memory_size': len(self.memory['context']),\n            'knowledge_base_size': len(self.memory['knowledge_base']),\n            'learning_history_size': len(self.memory['learning_history']),\n            'current_task': self.current_task,\n            'parameters': {\n                'temperature': self.temperature,\n                'reasoning_depth': self.reasoning_depth,\n                'max_tokens': self.max_tokens\n            },\n            'last_updated': datetime.now().isoformat()\n        }\n\n    def reset_memory(self):\n        \"\"\"\n        重置AGI记忆\n        \"\"\"\n        self.memory = {\n            'context': [],\n            'knowledge_base': {},\n            'user_profile': {},\n            'learning_history': []\n        }\n        logger.info(\"AGI memory reset completed\")\n\n    def save_state(self, filename: str = \"agi_state.json\"):\n        \"\"\"\n        保存AGI状态到文件\n        \"\"\"\n        with open(filename, 'w') as f:\n            json.dump(self.memory, f, indent=2)\n        logger.info(f\"AGI state saved to {filename}\")\n\n    def load_state(self, filename: str = \"agi_state.json\"):\n        \"\"\"\n        从文件加载AGI状态\n        \"\"\"\n        if os.path.exists(filename):\n            with open(filename, 'r') as f:\n                self.memory = json.load(f)\n            logger.info(f\"AGI state loaded from {filename}\")\n        else:\n            logger.warning(f\"State file {filename} not found\")\n\n# 全局AGI实例\nagi_engine = AGIEngine()\n\n# 使用示例\nif __name__ == \"__main__\":\n    # 示例：让AGI思考一个复杂问题\n    instruction = \"Explain quantum computing principles and their potential impact on future technology.\"\n    result = agi_engine.think(instruction)\n    print(json.dumps(result, indent=2))\n    \n    # 示例：让AGI自我改进\n    agi_engine.self_improve()\n    print(f\"AGI status: {agi_engine.get_status()}\")\n"
+        },
+        {
+            "filename": "requirements.txt",
+            "content": "openai==1.0.0\npython-dotenv==0.21.0\n"
+        },
+        {
+            "filename": "config.py",
+            "content": "# config.py\n# AGI系统配置\n\nimport os\n\n# 环境变量\nOPENAI_API_KEY = os.getenv('OPENAI_API_KEY')\n\n# AGI系统配置\nAGI_CONFIG = {\n    'model': 'gpt-4-turbo',\n    'max_tokens': 4096,\n    'temperature': 0.7,\n    'top_p': 0.9,\n    'frequency_penalty': 0.5,\n    'presence_penalty': 0.5,\n    'reasoning_depth': 3,\n    'learning_rate': 0.1,\n    'memory_capacity': 1000,\n    'auto_save_interval': 300  # 5分钟自动保存\n}\n\n# 日志配置\nLOGGING_CONFIG = {\n    'level': 'INFO',\n    'format': '%(asctime)s - %(name)s - %(levelname)s - %(message)s',\n    'filename': 'agi.log'\n}"
+        },
+        {
+            "filename": "run_agi.py",
+            "content": "# run_agi.py\n# AGI系统启动脚本\n\nimport os\nimport sys\nfrom agi_core import AGIEngine\n\ndef main():\n    \"\"\"\n    主函数 - 启动AGI系统\n    \"\"\"\n    # 检查环境变量\n    if not os.getenv('OPENAI_API_KEY'):\n        print(\"Error: OPENAI_API_KEY environment variable is required\")\n        print(\"Set it using: export OPENAI_API_KEY=your_api_key\")\n        sys.exit(1)\n\n    # 创建AGI引擎\n    agi = AGIEngine()\n\n    # 加载之前的状态\n    agi.load_state()\n\n    print(\"AGI System Ready!\")\n    print(\"Type 'quit' to exit\")\n    print(\"Type 'status' to see current status\")\n    print(\"Type 'reset' to reset memory\")\n\n    # 交互循环\n    while True:\n        try:\n            user_input = input(\"\\n> \")\n            \n            if user_input.lower() == 'quit':\n                break\n            elif user_input.lower() == 'status':\n                status = agi.get_status()\n                print(json.dumps(status, indent=2))\n            elif user_input.lower() == 'reset':\n                agi.reset_memory()\n                print(\"Memory reset completed\")\n            elif user_input.strip():\n                # 处理用户输入\n                result = agi.think(user_input)\n                print(f\"\\nResponse: {result['response']}\\n\")\n                \n                # 自我改进\n                if len(agi.memory['learning_history']) % 10 == 0:\n                    agi.self_improve()\n\n        except KeyboardInterrupt:\n            print(\"\\nShutting down AGI...\")\n            break\n        except Exception as e:\n            print(f\"Error: {e}\")\n\n    # 保存状态\n    agi.save_state()\n    print(\"AGI system shutdown complete\")\n\nif __name__ == \"__main__\":\n    main()"
+        }
+    ]
 }
 ```
