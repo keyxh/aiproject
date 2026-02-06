@@ -5,23 +5,11 @@
     "files": [
         {
             "filename": "agi.py",
-            "content": "# agi.py\n\nimport openai\nfrom flask import Flask, request, jsonify\n\n# Initialize the OpenAI API client\nopenai.api_key = 'your-openai-api-key'\n\napp = Flask(__name__)\n\n# Define the AGI endpoint\n@app.route('/agi', methods=['POST'])\n\ndef agi_endpoint():\n    # Get the prompt from the request\n    data = request.get_json()\n    prompt = data.get('prompt')\n\n    if not prompt:\n        return jsonify({'error': 'Prompt is missing'}), 400\n\n    # Call OpenAI API to generate a response\n    response = openai.Completion.create(\n        engine='davinci',\n        prompt=prompt,\n        max_tokens=150\n    )\n\n    # Return the generated response\n    return jsonify({'response': response.choices[0].text.strip()}), 200\n\n# Run the Flask app\nif __name__ == '__main__':\n    app.run(debug=True)\n"
+            "content": "# agi.py\n\nimport openai\n\nclass AGI:\n    def __init__(self, api_key):\n        self.api_key = api_key\n        openai.api_key = self.api_key\n\n    def generate_response(self, prompt):\n        \n        # Use OpenAI's GPT-3 model to generate a response based on the prompt\n        response = openai.Completion.create(\n            engine='text-davinci-002',  # The engine to use\n            prompt=prompt,  # The prompt to generate a response for\n            max_tokens=150  # The maximum number of tokens to generate\n        )\n        \n        return response.choices[0].text.strip()\n\n# Example usage:\nif __name__ == '__main__':\n    api_key = 'your_openai_api_key_here'\n    agi_instance = AGI(api_key)\n    prompt = 'Tell me a joke'\n    print(agi_instance.generate_response(prompt))\n"
         },
         {
             "filename": "README.md",
-            "content": "# AGI Project\n\nThis project is an attempt to create a true Artificial General Intelligence (AGI) using the OpenAI API.\n\n## Overview\n\nThe project provides a simple Flask API endpoint that allows users to send prompts to the AGI, which will then use the OpenAI API to generate a response.\n\n## Features\n\n- Uses OpenAI API to generate responses\n- Simple Flask API endpoint for interacting with the AGI\n- Can be extended with additional features such as NLP understanding, reasoning, and learning capabilities\n\n## Setup\n\nTo run this project, you will need:\n\n- Python 3.x\n- Flask\n- OpenAI API key (create one at https://openai.com/api)\n\n## Running the Application\n\n1. Clone the repository\n2. Install dependencies:\n\n    ```
-    pip install Flask openai
-    ```\n3. Set the OPENAI_API_KEY environment variable to your OpenAI API key\n4. Run the application:\n\n    ```
-    python agi.py
-    ```\n\n## Contributing\n\nContributions are welcome! Please follow the contributing guidelines in the repository.\n\n## License\n\nThis project is licensed under the [MIT License](LICENSE).\n"
-        },
-        {
-            "filename": "requirements.txt",
-            "content": "Flask==2.0.2\nopenai\n"
-        },
-        {
-            "filename": "LICENSE",
-            "content": "MIT License\n\nCopyright (c) 2023 Your Name\n\nPermission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the \"Software\"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is\nfurnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.\n"
+            "content": "# AGI Project\n\nThis project is an attempt to create a truly advanced General Artificial Intelligence (AGI) using OpenAI's API.\n\n## Features\n- Uses OpenAI's GPT-3 model for natural language processing\n- Can generate responses to various prompts\n\n## Setup\n\n1. Install OpenAI Python package:\n    ```bash\n    pip install openai\n    ```\n\n2. Get an OpenAI API key and set it in the `agi.py` file under the `api_key` variable.\n\n## Usage\n\nTo use the AGI, simply create an instance of the `AGI` class and call the `generate_response` method with a prompt.\n\n```python\nfrom agi import AGI\n\napi_key = 'your_openai_api_key_here'\nagi_instance = AGI(api_key)\nprompt = 'Tell me a joke'\nprint(ag_i_instance.generate_response(prompt))\n```\n"
         }
     ]
 }
