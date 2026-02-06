@@ -1,95 +1,81 @@
 import openai
 import os
-import logging
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any
 
-# 配置日志
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
-
-# 从环境变量加载OpenAI API密钥
-OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
-if not OPENAI_API_KEY:
-    raise ValueError("OPENAI_API_KEY 环境变量未设置")
+# 配置OpenAI API密钥
+os.environ["OPENAI_API_KEY"] = "your_openai_api_key_here"  # 请替换为你的实际API密钥
 
 # 初始化OpenAI客户端
-openai.api_key = OPENAI_API_KEY
+openai.api_key = os.getenv("OPENAI_API_KEY")
 
 class AGIEngine:
     """
-    AGI（通用人工智能）引擎核心类，封装与OpenAI API交互逻辑。
-    支持多轮对话、上下文管理、任务规划与执行。
+    AGI引擎核心类，封装与OpenAI API交互逻辑，支持多轮对话、上下文管理、任务规划等。
     """
-    def __init__(self, model: str = "gpt-4", temperature: float = 0.7):
-        self.model = model
-        self.temperature = temperature
-        self.conversation_history: List[Dict[str, Any]] = []
-        logger.info(f"AGI引擎初始化，使用模型: {model}")
+    def __init__(self):
+        self.context_history: List[Dict[str, Any]] = []  # 存储对话历史
+        self.system_prompt = "你是一个具有自我学习和推理能力的通用人工智能助手。请根据用户需求提供准确、深入、有逻辑的回答。"
 
-    def add_message(self, role: str, content: str):
+    def add_system_prompt(self, prompt: str):
         """
-        添加一条对话消息到历史记录中。
-        :param role: 'user' 或 'assistant'
-        :param content: 消息内容
+        设置系统提示词，用于引导AI行为。
         """
-        self.conversation_history.append({"role": role, "content": content})
-        logger.debug(f"添加消息: {role} - {content}")
+        self.system_prompt = prompt
 
-    def get_response(self, prompt: str, max_tokens: int = 500) -> str:
+    def generate_response(self, user_input: str) -> str:
         """
-        从OpenAI获取响应。
-        :param prompt: 用户输入或系统提示
-        :param max_tokens: 最大响应长度
-        :return: 模型生成的响应文本
+        根据用户输入生成响应。
+        使用OpenAI API调用GPT模型，结合上下文历史。
         """
-        # 将历史对话添加到上下文中
-        messages = self.conversation_history + [{"role": "user", "content": prompt}]
+        # 构建对话上下文
+        messages = [
+            {"role": "system", "content": self.system_prompt}
+        ] + self.context_history + [{"role": "user", "content": user_input}]
 
         try:
             response = openai.ChatCompletion.create(
-                model=self.model,
+                model="gpt-4",  # 或者 "gpt-3.5-turbo"，根据需求调整
                 messages=messages,
-                temperature=self.temperature,
-                max_tokens=max_tokens
+                temperature=0.7,
+                max_tokens=1500
             )
-            response_text = response.choices[0].message.content.strip()
-            self.add_message("assistant", response_text)
-            logger.info(f"模型响应: {response_text[:100]}...")
-            return response_text
+            # 提取回复内容
+            assistant_reply = response.choices[0].message.content
+            
+            # 更新上下文历史
+            self.context_history.append({"role": "user", "content": user_input})
+            self.context_history.append({"role": "assistant", "content": assistant_reply})
+            
+            return assistant_reply
         except Exception as e:
-            logger.error(f"调用OpenAI API失败: {e}")
-            return "抱歉，请求失败，请稍后再试。"
+            return f"API调用失败: {str(e)}"
 
-    def reset_conversation(self):
+    def reset_context(self):
         """
-        重置对话历史。
+        重置对话上下文，开始新的对话。
         """
-        self.conversation_history.clear()
-        logger.info("对话历史已重置")
+        self.context_history = []
 
-    def set_system_prompt(self, system_prompt: str):
+    def get_context_length(self) -> int:
         """
-        设置系统提示词，用于引导模型行为。
-        :param system_prompt: 系统提示内容
+        获取当前上下文历史长度（用于调试或限制长度）。
         """
-        self.conversation_history.insert(0, {"role": "system", "content": system_prompt})
-        logger.info("系统提示已设置")
+        return len(self.context_history)
 
 # 示例使用
 if __name__ == "__main__":
-    # 初始化AGI引擎
-    agi = AGIEngine(model="gpt-4", temperature=0.7)
+    agi = AGIEngine()
+    agi.add_system_prompt("你是一个具备多领域知识的AI助手，能回答复杂问题并进行推理。")
     
-    # 设置系统提示
-    agi.set_system_prompt("你是一个具有通用智能的AI助手，能够回答各种问题并执行复杂任务。")
-    
-    # 与用户交互
-    print("欢迎使用AGI系统。输入 'quit' 退出。")
+    print("AGI引擎已启动。输入 'quit' 退出。")
     while True:
         user_input = input("用户: ")
         if user_input.lower() == "quit":
             print("再见！")
             break
         
-        response = agi.get_response(user_input)
+        response = agi.generate_response(user_input)
         print(f"AGI: {response}")
+        
+        # 可选：打印当前上下文长度
+        # print(f"当前上下文长度: {agi.get_context_length()}")
