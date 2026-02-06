@@ -1,12 +1,31 @@
 # agi
 
- ```json
+```json
 {
-  "files": [
-    {
-      "filename": "main.py",
-      "content": "#!/usr/bin/env python3\n\"\"\"\nAGI System Entry Point\n项目入口：初始化并运行AGI主循环\n\"\"\"\nimport asyncio\nimport logging\nimport sys\nfrom pathlib import Path\n\nfrom core.agi_system import AGISystem\nfrom config.settings import Settings\n\nlogging.basicConfig(\n    level=logging.INFO,\n    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',\n    handlers=[\n        logging.StreamHandler(sys.stdout),\n        logging.FileHandler('agi.log')\n    ]\n)\nlogger = logging.getLogger(__name__)\n\n\nasync def main():\n    \"\"\"主异步循环\"\"\"\n    try:\n        # 加载配置\n        settings = Settings()\n        \n        # 初始化AGI系统\n        agi = AGISystem(settings)\n        await agi.initialize()\n        \n        logger.info(\"AGI系统初始化完成，开始主循环...\")\n        \n        # 主循环：感知-思考-行动-学习\n        while True:\n            try:\n                # 获取环境输入（这里简化为用户输入）\n                user_input = input(\"\\n用户输入 (或 'exit' 退出): \").strip()\n                \n                if user_input.lower() == 'exit':\n                    break\n                \n                # 执行认知循环\n                result = await agi.cognitive_cycle(user_input)\n                \n                # 输出结果\n                print(f\"\\nAGI输出: {result['response']}\")\n                print(f\"思考过程: {result['reasoning']}\")\n                print(f\"使用的工具: {result['tools_used']}\")\n                \n            except KeyboardInterrupt:\n                logger.info(\"接收到中断信号，正在优雅关闭...\")\n                break\n            except Exception as e:\n                logger.error(f\"认知循环错误: {e}\", exc_info=True)\n                \n    except Exception as e:\n        logger.critical(f\"系统级错误: {e}\", exc_info=True)\n    finally:\n        if 'agi' in locals():\n            await agi.shutdown()\n        logger.info(\"AGI系统已关闭\")\n\n\nif __name__ == \"__main__\":\n    asyncio.run(main())"
-    },
-    {
-      "filename": "core/agi_system.py",
-      "content": "\"\"\"\nAGI Core System\n整合所有认知模块，实现完整的认知架构\n\"\"\"\nimport logging\nfrom typing import Dict, Any, Optional\nimport openai\n\nfrom .memory import MemorySystem\nfrom .cognition import CognitionEngine\nfrom .planning import PlanningModule\nfrom .execution import ExecutionEngine\nfrom .reflection import ReflectionModule\n\nlogger = logging.getLogger(__name__)\n\n\nclass AGISystem:\n    \"\"\"\n    通用人工智能系统核心类\n    实现感知-思考-行动-学习的闭环\n    \"\"\"\n    \n    def __init__(self, settings):\n        self.settings = settings\n        self.client = openai.AsyncOpenAI(api_key=settings.openai_api_key)\n        \n        # 初始化子系统\n        self.memory = MemorySystem(self.client)\n        self.cognition = CognitionEngine(self.client)\n        self.planning = PlanningModule(self.client)\n        self.execution = ExecutionEngine(self.client)\n        self.reflection = ReflectionModule(self.client)\n        \n        self.context = {\n            \"session_id\": None,\n            \"current_goal\": None,\n            \"working_memory\": {},\n            \"performance_metrics\": {}\n        }\n        \n    async def initialize(self):\n        \"\"\"系统初始化\"\"\"\n        logger.info(\"正在初始化AGI子系统...\")\n        await self.memory.initialize()\n        await self.cognition.initialize()\n        await self.planning.initialize()\n        await self.execution.initialize()\n        await self.reflection.initialize()\n        logger.info(\"所有子系统初始化完成\")\n        \n    async def cognitive_cycle(self, perception: str) -> Dict[str, Any]:\n        \"\"\"\n        完整的认知循环\n        1. 感知输入处理\n        2. 记忆检索\n        3. 规划与推理\n        4. 执行行动\n        5. 反思与学习\n        \"\"\"\n        try:\n            # 1. 感知处理 - 理解输入\n            perceived = await self._perceive(perception)\n            \n            # 2. 记忆检索 - 获取相关知识\n            relevant_memories = await self.memory.retrieve(\n                query=perceived,\n                context=self.context\n            )\n            \n            # 3. 认知处理 - 推理与理解\n            understanding = await self.cognition.process(\n                perception=perceived,\n                memories=relevant_memories,\n                context=self.context\n            )\n            \n            # 4. 规划 - 制定行动方案\n            plan = await self.planning.create_plan(\n                understanding=understanding,\n                goal=self.context.get(\"current_goal\"),\n                context=self.context\n            )\n            \n            # 5. 执行 - 调用工具或生成响应\n            execution_result = await self.execution.execute(\n                plan=plan,\n                context=self.context\n            )\n            \n            # 6. 反思 - 评估并学习\n            reflection = await self.reflection.reflect(\n                perception=perceived,\n                action=execution_result,\n                outcome=execution_result.get(\"result\"),\n                context=self.context\n            )\n            \n            # 7. 记忆存储\n            await self.memory.store(\n                content={\n                    \"input\": perception,\n                    \"understanding\": understanding,\n                    \"plan\": plan,\n                    \"result\": execution_result,\n                    \"reflection\": reflection\n                },\n                importance=reflection.get(\"importance\", 0.5)\n            )\n            \n            # 更新上下文\n            self._update_context(understanding, execution_result, reflection)\n            \n            return {\n                \"response\": execution_result.get(\"output\", \"\"),\n                \"reasoning\": understanding.get(\"reasoning\", \"\"),\n                \"tools_used\": execution_result.get(\"tools_used\", []),\n                \"confidence\": reflection.get(\"confidence\", 0.0),\n                \"learning_applied\": reflection.get(\"improvements\", [])\n            }\n            \n        except Exception as e:\n            logger.error(f\"认知循环执行失败: {e}\", exc_info=True)\n            return {\n                \"response\": \"系统处理过程中遇到错误\",\n                \"error\": str(e),\n                \"reasoning\": \"异常处理\",\n                \"tools_used\": []\n            }\n    \n    async def _perceive(self, raw_input: str) -> Dict[str, Any]:\n        \"\"\"感知层：处理原始输入\"\"\"\n        # 使用OpenAI进行初步理解和结构化\n        response = await self.client.chat.completions.create(\n            model=\"gpt-4\",\n            messages=[\n                {\n                    \"role\": \"system\",\n                    \"content\": \"你是一个感知处理器。分析用户输入，提取意图、实体和情感。输出JSON格式。
+    "files": [
+        {
+            "filename": "agi.py",
+            "content": "import openai
+
+# 初始化OpenAI API客户端
+openai.api_key = 'YOUR_OPENAI_API_KEY'
+
+def generate_response(user_input):
+    # 调用OpenAI的GPT-3模型API
+    response = openai.Completion.create(
+        engine='text-davinci-002',
+        prompt=user_input,
+        max_tokens=150  # 设置返回的最大字符数
+    )
+    
+    # 返回模型生成的文本
+    return response.choices[0].text.strip()
+
+if __name__ == '__main__':
+    user_input = input('请输入您的问题：')
+    response = generate_response(user_input)
+    print('AGI回复：', response)"
+        }
+    ]
+}
+```
