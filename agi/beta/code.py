@@ -1,7 +1,31 @@
 # agi
 
- "files": [
-    {
-      "filename": "main.py",
-      "content": "'''\nAGI模块\n这个模块实现了一个真正意义上的AGI，使用OpenAI API作为模型API。\n'''\n\nfrom openai import GPT-3\n\n# 初始化OpenAI模型\nopenai_api_key = '你的开AI密钥'\ngpt3 = GPT-3(api_key=openai_api_key)\n\n# 示例AGI操作\ndef ask_question(question):\n    \"\"\"\n    问一个问题并得到答案。\n    \n    参数:\n    question (str): 需要回答的问题。\n    \n    返回:\n    str: 模型回答的答案。\n    \"\"\"\n    response = gpt3.complete(\n        engine='davinci',\n        prompt=question,\n        max_tokens=150\n    )\n    return response.choices[0].text.strip()\n\n# 示例使用\nquestion = 'AGI的定义是什么？'\nanswer = ask_question(question)\nprint(f'问题: {question}\\n答案: {answer}')\n"
-]
+```json
+{
+    "files": [
+        {
+            "filename": "agi.py",
+            "content": "import openai
+
+# 初始化OpenAI API客户端
+openai.api_key = 'YOUR_OPENAI_API_KEY'
+
+def generate_response(user_input):
+    # 调用OpenAI的GPT-3模型API
+    response = openai.Completion.create(
+        engine='text-davinci-003',
+        prompt=user_input,
+        max_tokens=150  # 设置返回的最大字符数
+    )
+    
+    # 返回模型生成的文本
+    return response.choices[0].text.strip()
+
+if __name__ == '__main__':
+    user_input = input('请输入您的问题: ')
+    response = generate_response(user_input)
+    print('AGI回复: ', response)"
+        }
+    ]
+}
+```
