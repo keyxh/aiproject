@@ -1,12 +1,20 @@
+#!/usr/bin/env python3
+"""
+Configuration module for the AGI project.
+Handles environment variables and settings for OpenAI API integration.
+"""
+
 import os
 from dotenv import load_dotenv
 
-load_dotenv()  # Load environment variables from .env file
+# Load environment variables from .env file if present
+load_dotenv()
 
-class Config:
-    """
-    Configuration class for AGI project.
-    Manages API keys and other settings.
-    """
-    OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "your-api-key-here")  # Replace with your API key or set in .env file
-    MODEL = "gpt-4"  # Default model to use; can be changed to gpt-3.5-turbo or others
+# OpenAI API Key
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+
+if not OPENAI_API_KEY:
+    raise ValueError(
+        "OPENAI_API_KEY is not set in environment variables. "
+        "Please set it in a .env file or export it."
+    )
