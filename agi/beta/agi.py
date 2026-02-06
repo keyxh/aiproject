@@ -1,49 +1,53 @@
 # AGI (Artificial General Intelligence) Implementation using OpenAI API
-# This file contains the core logic for interacting with the OpenAI API to simulate an AGI system.
+# This is a basic framework to demonstrate how an AGI might be built using OpenAI's models.
 
 import openai
 import os
-from dotenv import load_dotenv
 
-# Load environment variables from .env file
-load_dotenv()
-
-# Set up OpenAI API key
+# Set your OpenAI API key
 openai.api_key = os.getenv('OPENAI_API_KEY')
 
-# Define a function to generate responses using the OpenAI API
-def generate_response(prompt):
-    """Generate a response based on the given prompt using OpenAI's GPT model.
+# Define the core components of the AGI system
+class AGI:
+    def __init__(self):
+        self.models = {
+            'gpt-3.5-turbo': 'gpt-3.5-turbo',
+            'gpt-4': 'gpt-4',
+            'text-davinci-003': 'text-davinci-003',
+            'text-curie-001': 'text-curie-001',
+            'text-babbage-001': 'text-babbage-001',
+            'text-ada-001': 'text-ada-001'
+        }
+        self.current_model = 'gpt-3.5-turbo'  # Default model
 
-    Args:
-        prompt (str): The input prompt for the AI model.
+    def set_model(self, model_name):
+        """Set the current model to use for interactions."""
+        if model_name in self.models:
+            self.current_model = model_name
+        else:
+            raise ValueError(f"Model {model_name} not found. Available models: {list(self.models.keys())}")
 
-    Returns:
-        str: The generated response from the AI model.
-    """
-    try:
-        response = openai.Completion.create(
-            engine="text-davinci-003",  # Using GPT-3.5 model
-            prompt=prompt,
-            max_tokens=150,  # Maximum number of tokens in the response
-            n=1,  # Number of responses to generate
-            stop=None,  # Stop generating when the model reaches this token
-            temperature=0.7  # Controls the randomness of the output
-        )
-        return response.choices[0].text.strip()
-    except Exception as e:
-        return f"Error: {str(e)}"
+    def generate_response(self, prompt):
+        """Generate a response using the selected model."""
+        try:
+            response = openai.ChatCompletion.create(
+                model=self.current_model,
+                messages=[{"role": "user", "content": prompt}]
+            )
+            return response.choices[0].message.content
+        except Exception as e:
+            return f"Error: {str(e)}"
 
-# Example usage of the AGI system
-def main():
-    print("Welcome to the AGI System!")
-    while True:
-        user_input = input("You: ")
-        if user_input.lower() in ["exit", "quit"]:
-            print("Goodbye!")
-            break
-        response = generate_response(user_input)
-        print(f"AGI: {response}")
+    def run(self):
+        """Run the AGI system interactively."""
+        print("AGI System Started. Type 'exit' to quit.")
+        while True:
+            user_input = input("You: ")
+            if user_input.lower() == 'exit':
+                break
+            response = self.generate_response(user_input)
+            print(f"AGI: {response}")
 
 if __name__ == "__main__":
-    main()
+    agi = AGI()
+    agi.run()
