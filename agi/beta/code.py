@@ -1,6 +1,32 @@
 # agi
 
- "files": [
-    {
-      "filename": "agiservice.py",
-      "content": "'''\nAGI Service with OpenAI API\n\n这个服务使用OpenAI API来模拟人工智能的行为。\n\n函数说明:\n\nagiservice.py\n'''\n\n\"\"\"\nAGI Service with OpenAI API\n\n这个服务使用OpenAI API来模拟人工智能的行为。\n\n函数说明:\n\nagiservice.py\n\"\"\"\n\n# AGI Service with OpenAI API\nclass AGIService:\n    \"\"\"\n    AGI服务，使用OpenAI API模拟人工智能行为。\n    \"\"\"\n    def __init__(self, openai_api_key):\n        \"\"\"\n        初始化AGIService。\n        :param openai_api_key: OpenAI API密钥\n        \"\"\"\n        self.openai_api_key = openai_api_key\n        self.openai_client = openai. OpenAI(api_key=openai_api_key)\n    \n    def ask_question(self, question):\n        \"\"\"\n        问一个问题并获取答案。\n        :param question: 问题字符串\n        :return: 模拟AGI的答案\n        \"\"\"\n        response = self.openai_client.completion.create(\n            engine=\"davinci\",\n            prompt=f\"问一个关于AGI的问题：'{question}'\",\n            max_tokens=150\n        )\n        return response.choices[0].text.strip()\n\n# 使用AGIService\nif __name__ == \"__main__\":\n    # 这里应该是从环境变量或配置文件中获取的实际密钥\n    openai_api_key = \"your_openai_api_key_here\"\n    agi_service = AGIService(openai_api_key)\n    question = \"AGI服务的潜在应用是什么？」\n    answer = agi_service.ask_question(question)\n    print(f\"问：{question}\\n答：{answer}\")\n  ]}"
+```json
+{
+    "files": [
+        {
+            "filename": "agi.py",
+            "content": "import openai
+
+# 初始化OpenAI API客户端
+openai.api_key = 'YOUR_OPENAI_API_KEY'
+
+def generate_response(user_input):
+    # 使用OpenAI的ChatCompletion函数来生成响应
+    response = openai.ChatCompletion.create(
+        model="text-davinci-003",
+        messages=[
+            {"role": "user", "content": user_input},
+        ],
+        temperature=0.7,
+    )
+    # 返回生成的响应文本
+    return response.choices[0].message.content
+
+if __name__ == '__main__':
+    user_input = input('你: ')
+    response = generate_response(user_input)
+    print('AGI: ', response)"
+        }
+    ]
+}
+```
