@@ -1,12 +1,84 @@
 # agi
 
- ```json
+```json
 {
   "files": [
     {
-      "filename": "architecture/ARCHITECTURE.md",
-      "content": "# AGI System Architecture\n\n## Overview\nThis document describes the architecture of the AGI (Artificial General Intelligence) system. The design follows a modular, layered architecture with clear separation of concerns.\n\n## Architectural Principles\n\n1. **Cognitive Architecture**: Implements a cognitive cycle (Perceive -> Reason -> Plan -> Act -> Reflect -> Learn)\n2. **Modularity**: Each component is replaceable and independently scalable\n3. **Extensibility**: Plugin-based tool system and memory backends\n4. **Resilience**: Circuit breakers and fallback mechanisms for model API failures\n5. **Observability**: Full tracing of cognitive processes and decision chains\n\n## System Layers\n\n### 1. Interface Layer\n- RESTful API Gateway\n- WebSocket for real-time interaction\n- CLI interface for development/debugging\n\n### 2. Cognitive Layer (Core)\n- **Cognitive Engine**: Central orchestrator managing the reasoning loop\n- **Metacognition**: Self-monitoring, confidence estimation, strategy selection\n- **Context Manager**: Maintains working memory and attention mechanisms\n\n### 3. Memory Layer\n- **Working Memory**: Short-term, limited capacity (analogous to human working memory)\n- **Episodic Memory**: Event-based storage with temporal indexing\n- **Semantic Memory**: Vector-based knowledge storage (using embeddings)\n- **Procedural Memory**: Learned skills and tool usage patterns\n\n### 4. Execution Layer\n- **Tool Registry**: Dynamic tool discovery and execution\n- **Sandbox**: Secure execution environment for code generation\n- **Action Validator**: Safety checks before executing actions\n\n### 5. Model Layer\n- **LLM Gateway**: Abstraction over OpenAI API with retry logic, caching\n- **Embedding Service**: Text vectorization for memory retrieval\n- **Model Router**: Selects appropriate model based on task complexity\n\n## Data Flow\n\n1. **Input Processing**: Raw input -> Preprocessing -> Intent classification\n2. **Context Retrieval**: Query memories -> Rank relevance -> Load into working memory\n3. **Reasoning**: Chain-of-thought generation -> Hypothesis testing -> Decision making\n4. **Planning**: Task decomposition -> Dependency resolution -> Execution scheduling\n5. **Execution**: Tool invocation -> Result validation -> State update\n6. **Learning**: Experience consolidation -> Memory indexing -> Model fine-tuning triggers\n\n## Key Design Patterns\n\n- **Strategy Pattern**: For reasoning strategies (Chain-of-Thought, Tree of Thoughts, etc.)\n- **Observer Pattern**: For monitoring cognitive state changes\n- **Factory Pattern**: For creating appropriate memory stores\n- **Decorator Pattern**: For adding capabilities (logging, caching) to components\n\n## Scalability Considerations\n\n- Memory systems support distributed backends (Redis, PostgreSQL, Pinecone)\n- Cognitive engines can be horizontally scaled with shared memory spaces\n- Async processing for non-critical learning tasks\n"
+      "filename": "agi.py",
+      "content": "
+# AGI.py
+# 项目描述：实现一个真正意义上的AGI，如果使用的模型API用OpenAI API
+
+import os
+import json
+from typing import Dict, List
+import openai
+
+# 初始化OpenAI API
+openai.api_key = 'YOUR_OPENAI_API_KEY'
+
+def generate_text(prompt: str, max_tokens: int = 1024) -> str:
+    """
+    生成文本
+    
+    参数：
+    - prompt (str): 输入提示
+    - max_tokens (int): 最大生成token数
+    
+    返回：
+    - str: 生成的文本
+    """
+    response = openai.Completion.create(
+        engine='text-davinci-002',
+        prompt=prompt,
+        max_tokens=max_tokens
+    )
+    return response['choices'][0]['text']
+
+def generate_code(prompt: str, max_tokens: int = 1024) -> str:
+    """
+    生成代码
+    
+    参数：
+    - prompt (str): 输入提示
+    - max_tokens (int): 最大生成token数
+    
+    返回：
+    - str: 生成的代码
+    """
+    response = openai.Completion.create(
+        engine='code-davinci-002',
+        prompt=prompt,
+        max_tokens=max_tokens
+    )
+    return response['choices'][0]['text']
+
+def main():
+    # 测试生成文本
+    prompt = '实现一个真正意义上的AGI'
+    print(generate_text(prompt))
+    
+    # 测试生成代码
+    prompt = '实现一个简单的聊天机器人'
+    print(generate_code(prompt))
+
+if __name__ == '__main__':
+    main()
+"
     },
     {
-      "filename": "core/interfaces/base.py",
-      "content": "\"\"\"\nBase interfaces and abstract classes defining the AGI architecture contracts.\n\nThis module establishes the fundamental abstractions that all concrete implementations\nmust adhere to, ensuring interchangeability and testability.\n\"\"\"\n\nfrom abc import ABC, abstractmethod\nfrom typing import Any, Dict, List, Optional, AsyncIterator\nfrom dataclasses import dataclass\nfrom enum import Enum\nimport uuid\nfrom datetime import datetime\n\n\nclass CognitiveState(Enum):\n    \"\"\"States in the cognitive processing cycle.\"\"\"\n    PERCEIVING = \"perceiving\"\n    REASONING = \"reasoning\"\n    PLANNING = \"planning\"\n    EXECUTING = \"executing\"\n    REFLECTING = \"reflecting\"\n    LEARNING = \"learning\"\n    IDLE = \"idle\"\n\n\n@dataclass\nclass Thought:\n    \"\"\"Represents a unit of cognitive processing.\"\"\"\n    id: str\n    content: str\n    thought_type: str  # 'observation', 'inference', 'plan', 'reflection'\n    confidence: float\n    timestamp: datetime\n    parent_id: Optional[str] = None\n    metadata: Dict[str, Any] = None\n\n\n@dataclass\nclass Action:\n    \"\"\"Represents an action to be executed in the environment.\"\"\"\n    id: str\n    tool_name: str\n    parameters: Dict[str, Any]\n    expected_outcome: Optional[str] = None\n    rollback_plan: Optional[str] = None\n\n\n@dataclass\nclass Perception:\n    \"\"\"Structured input from the environment.\"\"\"\n    raw_input: str\n    modality: str  # 'text', 'image', 'structured_data'\n    timestamp: datetime\n    context_id: str\n    metadata: Dict[str, Any]\n\n\nclass MemoryBackend(ABC):\n    \"\"\"Abstract base for all memory storage systems.\"\"\"\n    \n    @abstractmethod\n    async def store(self, key: str, value: Any, memory_type: str) -> None:\n        \"\"\"Store an item in memory.\"\"\"\n        pass\n    \n    @abstractmethod\n    async def retrieve(self, query: str, limit: int = 5) -> List[Any]:\n        \"\"\"Retrieve relevant items based on query.\"\"\"\n        pass\n    \n    @abstractmethod\n    async def consolidate(self) -> None:\n        \"\"\"Consolidate memories (e.g., summarization, importance scoring).\"\"\"\n        pass\n\n\nclass Tool(ABC):\n    \"\"\"Abstract base for tools the AGI can use.\"\"\"\n    \n    name: str\n    description: str\n    parameters: Dict[str, Any]\n    \n    @abstractmethod\n    async def execute(self, **kwargs) -> Any:\n        \"\"\"Execute the tool with given parameters.\"\"\"\n        pass\n    \n    @abstractmethod\n    def validate_params(self, params: Dict[str, Any]) -> bool:\n        \"\"\"Validate parameters before execution.\"\"\"\n        pass\n\n\nclass ReasoningStrategy(ABC):\n    \"\"\"Abstract base for different reasoning approaches.\"\"\"\n    \n    @abstractmethod\n    async def reason(\n        self, \n        context: List[Thought], \n        goal: str,\n        llm_client: Any\n    ) -> List[Thought]:\n        \"\"\"Generate reasoning chain given context and goal.\"\"\"\n        pass\n\n\nclass CognitiveArchitecture(ABC):\n    \"\"\"Main interface for the AGI cognitive system.\"\"\"\n    \n    @abstractmethod\n    async def perceive
+      "filename": "requirements.txt",
+      "content": "
+openai
+"
+    },
+    {
+      "filename": "README.md",
+      "content": "
+# AGI项目
+实现一个真正意义上的AGI，如果使用的模型API用OpenAI API
+"
+    }
+  ]
+}
+```
