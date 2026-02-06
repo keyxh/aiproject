@@ -1,57 +1,23 @@
 # agi
 
-```json
 {
-  "files": [
-    {
-      "filename": "agi.py",
-      "content": "
-# AGI实现代码
-import os
-import json
-import requests
-
-# OpenAI API密钥
-OPENAI_API_KEY = 'YOUR_OPENAI_API_KEY'
-
-# OpenAI API地址
-OPENAI_API_URL = 'https://api.openai.com/v1/'
-
-# 定义AGI类
-class AGI:
-  def __init__(self):
-    self.api_key = OPENAI_API_KEY
-    self.api_url = OPENAI_API_URL
-
-  # 获取OpenAI API响应
-  def get_response(self, prompt):
-    headers = {
-      'Authorization': f'Bearer {self.api_key}',
-      'Content-Type': 'application/json'
-    }
-    data = {
-      'prompt': prompt,
-      'max_tokens': 1024,
-      'temperature': 0.7
-    }
-    response = requests.post(self.api_url + 'completions', headers=headers, json=data)
-    return response.json()
-
-  # 处理用户输入
-  def process_input(self, input_text):
-    response = self.get_response(input_text)
-    return response['choices'][0]['text']
-
-# 创建AGI实例
-agi = AGI()
-
-# 测试AGI
-while True:
-  user_input = input('用户输入：')
-  response = agi.process_input(user_input)
-  print('AGI响应：', response)
-"
-    }
-  ]
-}
-```
+    "files": [
+        {
+            "filename": "pyproject.toml",
+            "content": "[project]\nname = \"agi\"\nversion = \"0.1.0\"\ndescription = \"A minimal AGI‑like orchestration layer built on top of OpenAI API\"\nrequires-python = \">=3.9\"\ndependencies = [\n    \"openai>=1.0.0\",\n    \"fastapi>=0.110.0\",\n    \"uvicorn[standard]>=0.27.0\",\n    \"pydantic>=2.5.0\",\n    \"python-dotenv>=1.0.0\",\n    \"requests>=2.31.0\",\n    \"sqlalchemy>=2.0.0\"\n]\n\n[build-system]\nrequires = [\"setuptools\", \"wheel\"]\nbuild-backend = \"setuptools.build_meta\"\n"
+        },
+        {
+            "filename": "requirements.txt",
+            "content": "openai>=1.0.0\nfastapi>=0.110.0\nuvicorn[standard]>=0.27.0\npydantic>=2.5.0\npython-dotenv>=1.0.0\nrequests>=2.31.0\nsqlalchemy>=2.0.0\n"
+        },
+        {
+            "filename": "agi/__init__.py",
+            "content": "\"\"\"Top level package for the AGI project.\n\nThe package exposes a single entry point – :class:`agi.core.AGI` – which\ncoordinates memory, tool execution and interaction with the OpenAI API.\n\"\"\"\n\nfrom .core import AGI\n"
+        },
+        {
+            "filename": "agi/config.py",
+            "content": "\"\"\"Configuration handling for the AGI package.\n\nConfiguration values are loaded from environment variables (optionally via a\n``.env`` file) and validated with *pydantic*.\n\"\"\"\n\nfrom __future__ import annotations\n\nimport os\nfrom pathlib import Path\nfrom typing import Literal\n\nfrom pydantic import BaseSettings, Field, SecretStr, model_validator\n\n\nclass Settings(BaseSettings):\n    \"\"\"Application settings.\n\n    The class reads the following environment variables (or ``.env`` entries):\n\n    - ``OPENAI_API_KEY`` – secret key for the OpenAI service.\n    - ``OPENAI_MODEL`` – default model name (e.g. ``gpt-4o-mini``).\n    - ``MEMORY_DB_URL`` – SQLAlchemy URL for the memory backend. Defaults to a\n      SQLite file ``agi_memory.db`` in the project root.\n    - ``MAX_TOKENS`` – maximum tokens for completion requests.\n    - ``TEMPERATURE`` – sampling temperature.\n    \"\"\"\n\n    openai_api_key: SecretStr = Field(..., env=\"OPENAI_API_KEY\")\n    openai_model: str = Field(\"gpt-4o-mini\", env=\"OPENAI_MODEL\")\n    memory_db_url: str = Field(\n        default_factory=lambda: f\"sqlite:///{Path.cwd() / 'agi_memory.db'}\",\n        env=\"MEMORY_DB_URL\",\n    )\n    max_tokens: int = Field(1024, env=\"MAX_TOKENS\")\n    temperature: float = Field(0.7, env=\"TEMPERATURE\")\n\n    class Config:\n        env_file = \".env\"\n        env_file_encoding = \"utf-8\"\n        extra = \"ignore\"\n\n    @model_validator(mode=\"after\")\n    def check_temperature(cls, values: \"Settings\") -> \"Settings\":\n        if not 0.0 <= values.temperature <= 2.0:\n            raise ValueError(\"temperature must be between 0.0 and 2.0\")\n        return values\n\n\n# Export a singleton that can be imported throughout the codebase\nsettings = Settings()\n"
+        },
+        {
+            "filename": "agi/memory.py",
+            "content": "\"\"\"Simple vector‑store‑like memory implementation.\n\nThe implementation uses a SQLite table to persist *messages* with optional\nmetadata. For a production‑grade system you would replace this with a proper\nvector database (e.g. Pinecone, Weaviate, or Chroma).\n\"\"\"\n\nfrom __future__ import annotations\n\nimport json\nimport logging\nfrom datetime import datetime\nfrom typing import Any, Dict, List, Sequence\n\nfrom sqlalchemy import (Column, DateTime, Integer, JSON, String, create_engine,\n                        select)\nfrom sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, Session\n\nfrom .config import settings\n\nlog = logging.getLogger(__name__)\n\n\nclass Base(DeclarativeBase):\n    pass\n\n\nclass Message(Base):\n    __tablename__ = \"messages\"\n\n    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)\n    role: Mapped[str] = mapped_column(String, nullable=False)  # user / assistant / system\n    content: Mapped[str] = mapped_column(String, nullable=False)\n    created_at: Mapped[datetime] = mapped_column(\n        DateTime, default=datetime.utcnow, nullable=False\n    )\n    metadata: Mapped[Dict[str, Any]] = mapped_column(JSON, default=dict)\n\n    def to_dict(self) -> Dict[str, Any]:\n        return {\n            \"role\": self.role,\n            \"content\": self.content,\n            \"metadata\": self.metadata,\n            \"created_at\": self.created_at.isoformat(),\n        }\n\n\nclass Memory:\n    \"\"\"A thin wrapper around the SQLite message store.\n\n    The class provides two high‑level operations:\n\n    * ``add_message`` – persist a new message.\n    * ``get_recent`` – retrieve the last *n* messages for context building.\n    \"\"\"\n\n    def __init__(self, db_url: str | None = None):\n        self.engine = create_engine(db_url or settings.memory_db_url, echo=False, future=True)\n        Base.metadata.create_all(self.engine)\n        log.debug(\"Memory backend initialised using %s\", self.engine.url)\n\n    def add_message(self, role: str, content: str, metadata: Dict[str, Any] | None = None) -> None:\n        \"\"\"Persist a message.\n\n        Parameters\n        ----------\n        role:\n            One of ``\"user\"``, ``\"assistant\"`` or ``\"system\"``.\n        content:\n            The raw text of the message.\n        metadata:\n            Optional free‑form dictionary (e.g. token usage, tool calls).\n        \"\"\"\n        meta = metadata or {}\n        with Session(self.engine) as session:\n            msg = Message(role=role, content=content, metadata=meta)\n            session.add(msg)\n            session.commit()\n        log.debug(\"Stored %s message (len=%d)\", role, len(content))\n\n    def get_recent(self, limit: int = 20) -> List[Dict[str, Any]]:\n        \"\"\"Return the *limit* most recent messages ordered chronologically.\n        \"\"\"\n        with Session(self.engine) as session:\n            stmt = select(Message).order_by(Message.created_at.desc()).limit(limit)\n            rows = session.scalars(stmt).all()\n        # Reverse to chronological order (
