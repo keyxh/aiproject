@@ -5,67 +5,63 @@
   "files": [
     {
       "filename": "agi.py",
-      "content": "
-# AGI实现代码
-
+      "content": """
 import os
 import json
-from typing import Dict, List
-import openai
-
-# OpenAI API密钥
-OPENAI_API_KEY = 'YOUR_OPENAI_API_KEY'
-
-# 初始化OpenAI API
-openai.api_key = OPENAI_API_KEY
+import requests
 
 class AGI:
-  def __init__(self):
-    # 初始化AGI模型
-    self.model = 'text-davinci-002'
+  def __init__(self, api_key):
+    self.api_key = api_key
+    self.base_url = 'https://api.openai.com/v1'
 
-  def ask(self, question: str) -> str:
-    # 使用OpenAI API提问
-    response = openai.Completion.create(
-      model=self.model,
-      prompt=question,
-      max_tokens=1024,
-      n=1,
-      stop=None,
-      temperature=0.7,
-    )
-    return response['choices'][0]['text']
+  def get_response(self, prompt):
+    headers = {
+      'Authorization': f'Bearer {self.api_key}',
+      'Content-Type': 'application/json'
+    }
+    data = {
+      'prompt': prompt,
+      'max_tokens': 2048,
+      'temperature': 0.7
+    }
+    response = requests.post(f'{self.base_url}/completions', headers=headers, json=data)
+    return response.json()['choices'][0]['text']
 
-  def learn(self, knowledge: Dict[str, str]) -> None:
-    # 使用OpenAI API学习知识
-    for key, value in knowledge.items():
-      prompt = f'{key}：{value}'
-      response = openai.Completion.create(
-        model=self.model,
-        prompt=prompt,
-        max_tokens=1024,
-        n=1,
-        stop=None,
-        temperature=0.7,
-      )
-      print(response['choices'][0]['text'])
+  def converse(self, prompt):
+    response = self.get_response(prompt)
+    return response
 
 def main():
-  agi = AGI()
+  api_key = os.environ['OPENAI_API_KEY']
+  agi = AGI(api_key)
   while True:
-    question = input('请输入问题：')
-    answer = agi.ask(question)
-    print(f'答案：{answer}')
+    prompt = input('User: ')
+    response = agi.converse(prompt)
+    print('AGI:', response)
 
 if __name__ == '__main__':
   main()
-"
+"""
     },
     {
       "filename": "requirements.txt",
-      "content": "
-openai
-"
+      "content": """
+requests
+"""
+    },
+    {
+      "filename": "README.md",
+      "content": """
+# AGI Project
+This project aims to implement a true AGI using the OpenAI API.
+
+## Usage
+1. Install the required libraries by running `pip install -r requirements.txt`.
+2. Set the `OPENAI_API_KEY` environment variable to your OpenAI API key.
+3. Run the AGI by executing `python agi.py`.
+4. Interact with the AGI by typing prompts and viewing responses.
+"""
     }
   ]
 }
