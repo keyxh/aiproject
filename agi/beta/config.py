@@ -1,18 +1,16 @@
 """
-Configuration management for AGI project.
-Loads environment variables from .env file.
+Configuration Module.
+This module handles configuration settings for the AGI project.
 """
 
 import os
 from dotenv import load_dotenv
 
-# Load environment variables from .env file
+# Load environment variables from .env file if present
 load_dotenv()
 
-# OpenAI API configuration
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-if not OPENAI_API_KEY:
-    raise ValueError("OPENAI_API_KEY not found in environment variables. Please set it in .env file.")
+# OpenAI API Key
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
 
-# Model configuration
-MODEL_NAME = os.getenv("MODEL_NAME", "gpt-4")  # Default to GPT-4 if not specified
+# Other configurations can be added here
+# Example: MODEL_NAME = os.getenv("MODEL_NAME", "gpt-4")
