@@ -2,67 +2,19 @@
 
 ```json
 {
-  "files": [
-    {
-      "filename": "agi.py",
-      "content": """
-import os
-import json
-import requests
-
-class AGI:
-  def __init__(self, api_key):
-    self.api_key = api_key
-    self.base_url = 'https://api.openai.com/v1'
-
-  def get_response(self, prompt):
-    headers = {
-      'Authorization': f'Bearer {self.api_key}',
-      'Content-Type': 'application/json'
-    }
-    data = {
-      'prompt': prompt,
-      'max_tokens': 2048,
-      'temperature': 0.7
-    }
-    response = requests.post(f'{self.base_url}/completions', headers=headers, json=data)
-    return response.json()['choices'][0]['text']
-
-  def converse(self, prompt):
-    response = self.get_response(prompt)
-    return response
-
-def main():
-  api_key = os.environ['OPENAI_API_KEY']
-  agi = AGI(api_key)
-  while True:
-    prompt = input('User: ')
-    response = agi.converse(prompt)
-    print('AGI:', response)
-
-if __name__ == '__main__':
-  main()
-"""
-    },
-    {
-      "filename": "requirements.txt",
-      "content": """
-requests
-"""
-    },
-    {
-      "filename": "README.md",
-      "content": """
-# AGI Project
-This project aims to implement a true AGI using the OpenAI API.
-
-## Usage
-1. Install the required libraries by running `pip install -r requirements.txt`.
-2. Set the `OPENAI_API_KEY` environment variable to your OpenAI API key.
-3. Run the AGI by executing `python agi.py`.
-4. Interact with the AGI by typing prompts and viewing responses.
-"""
-    }
-  ]
-}
-```
+    "files": [
+        {
+            "filename": "config.py",
+            "content": "import os\nfrom dotenv import load_dotenv\n\n# 加载环境变量\nload_dotenv()\n\n# OpenAI API配置\nOPENAI_API_KEY = os.getenv('OPENAI_API_KEY')\nDEFAULT_MODEL = \"gpt-4\"  # 可根据需要调整\nDEFAULT_TEMPERATURE = 0.7\nMAX_TOKENS = 2000\n\n# 记忆配置\nMAX_MEMORY_ITEMS = 20  # 最大记忆条数\nMEMORY_FILE = \"memory.json\"  # 记忆存储文件\n\n# 系统提示词\nSYSTEM_PROMPT = \"\"\"你是一个通用人工智能（AGI）。你需要像人类一样思考、学习和解决问题。\n你可以使用工具、搜索信息、进行推理，并在需要时请求澄清。\n请保持回答的逻辑性、准确性和实用性。\"\"\""
+        },
+        {
+            "filename": "memory.py",
+            "content": "import json\nimport time\nfrom typing import List, Dict, Any\n\nclass MemorySystem:\n    \"\"\"\n    记忆系统 - 存储和检索AGI的记忆\n    \"\"\"\n    \n    def __init__(self, memory_file: str = \"memory.json\", max_items: int = 20):\n        self.memory_file = memory_file\n        self.max_items = max_items\n        self.memories = self.load_memories()\n    \n    def load_memories(self) -> List[Dict[str, Any]]:\n        \"\"\"从文件加载记忆\"\"\"\n        try:\n            with open(self.memory_file, 'r', encoding='utf-8') as f:\n                return json.load(f)\n        except (FileNotFoundError, json.JSONDecodeError):\n            return []\n    \n    def save_memories(self):\n        \"\"\"保存记忆到文件\"\"\"\n        with open(self.memory_file, 'w', encoding='utf-8') as f:\n            json.dump(self.memories, f, ensure_ascii=False, indent=2)\n    \n    def add_memory(self, content: str, memory_type: str = \"conversation\",\n                   importance: float = 0.5, metadata: Dict = None):\n        \"\"\"添加新的记忆\"\"\"\n        memory = {\n            \"id\": len(self.memories),\n            \"content\": content,\n            \"type\": memory_type,\n            \"importance\": importance,\n            \"timestamp\": time.time(),\n            \"metadata\": metadata or {}\n        }\n        \n        self.memories.append(memory)\n        \n        # 如果超过最大数量，移除最不重要的记忆\n        if len(self.memories) > self.max_items:\n            self.memories.sort(key=lambda x: x[\"importance\"])\n            self.memories = self.memories[-self.max_items:]\n        \n        self.save_memories()\n        return memory[\"id\"]\n    \n    def search_memories(self, query: str, limit: int = 5) -> List[Dict[str, Any]]:\n        \"\"\"搜索相关记忆\"\"\"\n        # 简化的搜索：基于关键词匹配\n        query_words = query.lower().split()\n        results = []\n        \n        for memory in self.memories:\n            score = 0\n            content = memory[\"content\"].lower()\n            \n            for word in query_words:\n                if word in content:\n                    score += 1\n            \n            if score > 0:\n                results.append({\n                    \"memory\": memory,\n                    \"score\": score + memory[\"importance\"]  # 重要性加权\n                })\n        \n        # 按分数排序\n        results.sort(key=lambda x: x[\"score\"], reverse=True)\n        return [r[\"memory\"] for r in results[:limit]]\n    \n    def get_recent_memories(self, limit: int = 5) -> List[Dict[str, Any]]:\n        \"\"\"获取最近的记忆\"\"\"\n        return sorted(self.memories, key=lambda x: x[\"timestamp\"], reverse=True)[:limit]\n    \n    def clear_memories(self):\n        \"\"\"清除所有记忆\"\"\"\n        self.memories = []\n        self.save_memories()"
+        },
+        {
+            "filename": "agi_core.py",
+            "content": "import openai\nimport json\nfrom typing import List, Dict, Any, Optional\nfrom datetime import datetime\n\nfrom config import OPENAI_API_KEY, DEFAULT_MODEL, DEFAULT_TEMPERATURE, MAX_TOKENS, SYSTEM_PROMPT\nfrom memory import MemorySystem\n\nclass AGICore:\n    \"\"\"\n    AGI核心类 - 处理推理、决策和学习\n    \"\"\"\n    \n    def __init__(self):\n        # 初始化OpenAI客户端\n        openai.api_key = OPENAI_API_KEY\n        self.model = DEFAULT_MODEL\n        self.temperature = DEFAULT_TEMPERATURE\n        self.max_tokens = MAX_TOKENS\n        \n        # 初始化记忆系统\n        self.memory = MemorySystem()\n        \n        # 对话历史\n        self.conversation_history = []\n        self.max_history_length = 10\n        \n        # 系统状态\n        self.system_state = {\n            \"start_time\": datetime.now().isoformat(),\n            \"interaction_count\": 0,\n            \"learning_enabled\": True\n        }\n    \n    def _build_context(self, user_input: str) -> str:\n        \"\"\"构建对话上下文\"\"\"\n        context_parts = [SYSTEM_PROMPT]\n        \n        # 添加系统状态\n        context_parts.append(f\"\\n当前状态: 已运行{self.system_state['interaction_count']}次交互\")\n        \n        # 添加相关记忆\n        relevant_memories = self.memory.search_memories(user_input, limit=3)\n        if relevant_memories:\n            context_parts.append(\"\\n相关记忆:\")\n            for memory in relevant_memories:\n                context_parts.append(f\"- {memory['content']}\")\n        \n        # 添加最近的对话历史\n        if self.conversation_history:\n            context_parts.append(\"\\n对话历史:\")\n            for msg in self.conversation_history[-self.max_history_length:]:\n                role = msg[\"role\"]\n                content = msg[\"content\"][:100] + \"...\" if len(msg[\"content\"]) > 100 else msg[\"content\"]\n                context_parts.append(f\"{role}: {content}\")\n        \n        # 添加当前输入\n        context_parts.append(f\"\\n用户输入: {user_input}\")\n        context_parts.append(\"\\n请作为AGI进行回应:\")\n        \n        return \"\\n\".join(context_parts)\n    \n    def think(self, user_input: str) -> str:\n        \"\"\"核心思考过程\"\"\"\n        # 构建上下文\n        context = self._build_context(user_input)\n        \n        try:\n            # 调用OpenAI API\n            response = openai.ChatCompletion.create(\n                model=self.model,\n                messages=[\n                    {\"role\": \"system\", \"content\": context},\n                    {\"role\": \"user\", \"content\": user_input}\n                ],\n                temperature=self.temperature,\n                max_tokens=self.max_tokens\n            )\n            \n            ai_response = response.choices[0].message.content\n            \n            # 更新对话历史\n            self.conversation_history.append({\"role\": \"user\", \"content\": user_input})\n            self.conversation_history.append({\"role\": \"assistant\", \"content\": ai_response})\n            \n            # 限制历史长度\n            if len(self.conversation_history) > self.max_history_length * 2:\n                self.conversation_history = self.conversation_history[-self.max_history_length * 2:]\n            \n            # 更新系统状态\n            self.system_state[\"interaction_count\"] += 1\n            \n            # 学习过程（如果启用）\n            if self.system_state[\"learning_enabled\"]:\n                self._learn_from_interaction(user_input, ai_response)\n            \n            return ai_response\n            \n        except Exception as e:\n            return f\"思考过程中出现错误: {str(e)}\"\n    \n    def _learn_from_interaction(self, user_input: str, ai_response: str):\n        \"\"\"从交互中学习\"\"\"\n        # 判断是否需要记忆\n        should_memorize = self._should_memorize(user_input, ai_response)\n        \n        if should_memorize:\n            # 创建记忆内容\n            memory_content = f\"用户说: '{user_input}'，我回答: '{ai_response[:100]}...'\"\n            \n            # 计算重要性（简化版本）\n            importance = 0.5\n            if len(user_input) > 50 or len(ai_response) > 100:\n                importance = 0.7\n            \n            # 添加记忆\n            self.memory.add_memory(\n                content=memory_content,\n                memory_type=\"conversation\",\n                importance=importance,\n                metadata={\n                    \"input_length\": len(user_input),\n                    \"response_length\": len(ai_response),\n                    \"timestamp\": datetime.now().isoformat()\n                }\n            )\n    \n    def _should_memorize(self, user_input: str, ai_response: str) -> bool:\n        \"\"\"判断是否需要记忆这次交互\"\"\"\n        # 简单的启发式规则\n        keywords = [\"learn\", \"remember\", \"important\", \"关键\", \"重要\", \"记住\"]\n        \n        combined = user_input.lower() + ai_response.lower()\n        \n        # 如果包含关键词\n        for keyword in keywords:\n            if keyword in combined:\n                return True\n        \n        # 如果输入或输出较长，可能包含重要信息\n        if len(user_input) > 100 or len(ai_response) > 150:\n            return True\n        \n        return False\n    \n    def get_system_status(self) -> Dict[str, Any]:\n        \"\"\"获取系统状态\"\"\"\n        status = self.system_state.copy()\n        status[\"memory_count\"] = len(self.memory.memories)\n        status[\"conversation_history_length\"] = len(self.conversation_history)\n        status[\"current_time\"] = datetime.now().isoformat()\n        return status\n    \n    def clear_conversation(self):\n        \"\"\"清除对话历史\"\"\"\n        self.conversation_history = []\n        \n    def update_model(self, model: str, temperature: float = None):\n        \"\"\"更新模型参数\"\"\"\n        self.model = model\n        if temperature is not None:\n            self.temperature = temperature"
+        },
+        {
+            "filename": "main.py",
+            "content": "import argparse\nimport sys\nfrom agi_core import AGICore\n\nclass AGIInterface:\n    \"\"\"\n    AGI用户界面\n    \"\"\"\n    \n    def __init__(self):\n        self.agi = AGICore()\n        self.running = True\n        \n    def print_welcome(self):\n        \"\"\"显示欢迎信息\"\"\"\n        welcome_msg = \"\"\"\n        ====================================\n                通用人工智能 (AGI)\n        ====================================\n        输入 'quit' 或 'exit' 退出程序\n        输入 'status' 查看系统状态\n        输入 'clear' 清除对话历史\n        输入 'memory' 查看记忆\n        输入 'help' 显示帮助信息\n        ====================================\n        \"\"\"\n        print(welcome_msg)\n    \n    def print_help(self):\n        \"\"\"显示帮助信息\"\"\"\n        help_msg = \"\"\"\n        可用命令:\n        - 直接输入任何问题或指令与AGI对话\n        - 'quit' 或 'exit': 退出程序\n        - 'status': 显示系统状态\n        - 'clear': 清除当前对话历史\n        - 'memory': 查看最近的记忆\n        - 'help': 显示此帮助信息\n        \"\"\"\n        print(help_msg)\n    \n    def show_status(self):\n        \"\"\"显示系统状态\"\"\"\n        status = self.agi.get_system_status()\n        print(\"\\n=== 系统状态 ===\")\n        for key, value in status.items():\n            print(f\"{key}: {value}\")\n        print(\"================\\n\")\n    \n    def show_memory(self):\n        \"\"\"显示最近的记忆\"\"\"\n        memories = self.agi.memory.get_recent_memories(limit=5)\n        if not memories:\n            print(\"\\n暂无记忆\\n\")\n            return\n        \n        print(\"\\n=== 最近记忆 ===\")\n        for i, memory in enumerate(memories, 1):\n            print(f\"{i}. {memory['content'][:80]}...\")\n            print(f\"   时间: {memory['timestamp']} | 重要性: {memory['importance']}\")\n        print(\"================\\n\")\n    \n    def run_interactive(self):\n        \"\"\"运行交互式会话\"\"\"\n        self.print_welcome()\n        \n        while self.running:\n            try:\n                # 获取用户输入\n                user_input = input(\"\\n> \").strip()\n                \n                # 检查命令\n                if user_input.lower() in ['quit', 'exit']:\n                    print(\"再见！\")\n                    self.running = False\n                    break\n                elif user_input.lower() == 'status':\n                    self.show_status()\n                    continue\n                elif user_input.lower() == 'clear':\n                    self.agi.clear_conversation()\n                    print(\"对话历史已清除\")\n                    continue\n                elif user_input.lower() == 'memory':\n                    self.show_memory()\n                    continue\n                elif user_input.lower() == 'help':\n                    self.print_help
