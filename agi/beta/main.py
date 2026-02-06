@@ -10,55 +10,44 @@ openai.api_key = os.getenv("OPENAI_API_KEY")
 
 class AGIEngine:
     """
-    AGI引擎核心类，用于模拟通用人工智能行为。
-    当前版本基于OpenAI API实现基础对话与推理能力。
+    初级工程师实现的AGI引擎基础框架。
+    目前通过调用OpenAI API模拟AGI能力，后续可扩展为多模型、记忆、推理等模块。
     """
     def __init__(self):
-        self.conversation_history: List[Dict[str, Any]] = []
-        self.system_prompt = "You are an AGI assistant capable of reasoning, learning, and adapting to any task. Respond with clarity, creativity, and depth."
-
-    def add_message(self, role: str, content: str):
-        """
-        添加一条对话消息到历史记录中。
-        :param role: 'user' 或 'assistant'
-        :param content: 消息内容
-        """
-        self.conversation_history.append({"role": role, "content": content})
+        self.history: List[Dict[str, Any]] = []  # 对话历史记录
 
     def generate_response(self, user_input: str) -> str:
         """
-        根据用户输入生成响应，调用OpenAI API。
-        :param user_input: 用户输入内容
-        :return: AI生成的响应文本
+        使用OpenAI API生成响应。
+        输入：用户问题或指令
+        输出：模型生成的自然语言响应
         """
-        # 添加用户消息到历史
-        self.add_message("user", user_input)
-
-        # 构建对话上下文
-        messages = [
-            {"role": "system", "content": self.system_prompt}
-        ] + self.conversation_history
+        self.history.append({"role": "user", "content": user_input})
 
         try:
             response = openai.ChatCompletion.create(
-                model="gpt-4",  # 或者使用 "gpt-3.5-turbo" 以节省成本
-                messages=messages,
-                temperature=0.7,
-                max_tokens=1500
+                model="gpt-3.5-turbo",  # 可替换为gpt-4等更高级模型
+                messages=self.history,
+                max_tokens=150,
+                temperature=0.7
             )
-            # 提取AI响应内容
-            ai_response = response.choices[0].message.content
-            # 添加AI响应到历史
-            self.add_message("assistant", ai_response)
-            return ai_response
+            assistant_response = response.choices[0].message.content
+            self.history.append({"role": "assistant", "content": assistant_response})
+            return assistant_response
         except Exception as e:
             return f"Error: {str(e)}"
 
-    def reset_conversation(self):
+    def reset(self):
         """
-        重置对话历史，开始新的对话。
+        重置对话历史。
         """
-        self.conversation_history = []
+        self.history.clear()
+
+    def get_history(self) -> List[Dict[str, Any]]:
+        """
+        获取当前对话历史。
+        """
+        return self.history
 
 # 示例使用
 if __name__ == "__main__":
