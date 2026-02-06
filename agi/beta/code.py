@@ -1,20 +1,7 @@
 # agi
 
-```json
-{
-    "files": [
-        {
-            "filename": "agi.py",
-            "content": "# agi.py\n\nimport openai\n\n# OpenAI API Key - Should be stored in an environment variable for security reasons\nOPENAI_API_KEY = os.getenv('OPENAI_API_KEY')\n\n# Initialize the OpenAI client\nopenai.api_key = OPENAI_API_KEY\n\n\nclass AGI:\n    def __init__(self):\n        self.client = openai.OpenAI('api_key')\n\n    def generate_response(self, prompt):\n        \n        # Generate a response using the OpenAI API\n        response = self.client.Completion.create(\n            engine='text-davinci-002',  # Choose the appropriate engine\n            prompt=prompt,\n            max_tokens=150\n        )\n        \n        return response.choices[0].text.strip()\n\n\n# Example usage\nif __name__ == '__main__':\n    agi_instance = AGI()\n    user_input = input('Enter your prompt: ')\n    print(agi_instance.generate_response(user_input))\n"
-        },
-        {
-            "filename": "README.md",
-            "content": "# AGI Project\n\nThis project aims to create a truly advanced AI (AGI) using the OpenAI API.\n\n## Features\n- Utilizes OpenAI's powerful language models\n- Securely handles API keys\n- Modular design for easy expansion and maintenance\n\n## Setup\n1. Install required packages:\n    ```bash\n    pip install openai\n    ```\n\n2. Set the OPENAI_API_KEY environment variable with your OpenAI API key.\n\n## Usage\n- Run the `agi.py` script and interact with the AGI instance.\n\n## Contributing\nContributions are welcome! Please follow the contributing guidelines.\n"
-        },
-        {
-            "filename": "requirements.txt",
-            "content": "openai==0.27.0\n"
-        }
-    ]
-}
-```
+ "files": [
+    {
+      "filename": "agi.py",
+      "content": "'''\nAGI模块\n\n模块用于构建具有自主行为的AGI系统。\n\n作者：AGI项目团队\n'''\n\n# AGI模块\n\nfrom openai import APIKey\nfrom some_ai_framework import AIModel\n\n# 初始化OpenAI API密钥\napi_key = APIKey('your-api-key')\n\n# 初始化模型\nmodel = AIModel(api_key=api_key)\n\n# 示例：使用模型生成文本\n\ndef generate_text(prompt):\n    \"\"\"\n    生成文本的函数，使用模型和提示。\n    \n    参数:\n    prompt (str): 提供给模型生成文本的提示。\n    \n    返回:\n    str: 生成的文本。\n    \"\"\"\n    response = model.generate(prompt)\n    return response\n\n# 示例：使用模型回答问题\n\ndef answer_question(question):\n    \"\"\"\n    使用模型回答问题的函数。\n    \n    参数:\n    question (str): 问题。\n    \n    返回:\n    str: 模型的回答。\n    \"\"\"\n    response = model.answer(question)\n    return response\n\n# ...其他AGI相关的函数和类...\n"
+]
