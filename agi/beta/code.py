@@ -1,7 +1,12 @@
 # agi
 
- "files": [
-    {
-      "filename": "main.py",
-      "content": "'''\nAGI Core Module\n\n这个模块是AGI系统的核心，它将使用OpenAI API来处理自然语言处理任务。\n'''\n\nfrom openai import APIKey\n\n# 初始化OpenAI API密钥\napi_key = APIKey(os.getenv('OPENAI_API_KEY'))\n\n# 实现AGI核心逻辑\n# 这里的逻辑将涉及到多个模块和服务的集成。\n# 例如，语言理解模块、决策模块等。\ndef agi_core():\n    # AGI核心逻辑\n    pass\n\nif __name__ == \"__main__\":\n    agi_core()"
-]
+```json
+{
+    "files": [
+        {
+            "filename": "agi.py",
+            "content": "# agi.py\n\nimport openai\n\nclass AGI:\n    def __init__(self, api_key):\n        self.api_key = api_key\n        openai.api_key = self.api_key\n\n    def generate_response(self, prompt):\n        try:\n            response = openai.Completion.create(\n                engine='text-davinci-002',\n                prompt=prompt,\n                max_tokens=150\n            )\n            return response.choices[0].text.strip()\n        except openai.error.OpenAIError as e:\n            return f'An error occurred: {e}\n\n# Example usage\nif __name__ == '__main__':\n    api_key = 'your_openai_api_key_here'\n    agi_instance = AGI(api_key)\n    prompt = 'Translate the following English text to French: "Hello, how are you?"'\n    translation = agi_instance.generate_response(prompt)\n    print(translation)"
+        }
+    ]
+}
+```
