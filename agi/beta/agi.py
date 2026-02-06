@@ -1,103 +1,64 @@
-#!/usr/bin/env python3
-"""
-AGI (Artificial General Intelligence) Agent Implementation using OpenAI API.
-This module provides a simple AGI agent that can engage in conversations and perform tasks.
-"""
+# AGI (Artificial General Intelligence) Implementation using OpenAI API
+# This file contains the core logic for interacting with the OpenAI API to build an AGI system
 
+import openai
 import os
-from typing import List, Dict, Any
-from openai import OpenAI
-from config import OPENAI_API_KEY
+from typing import Dict, Any, List
 
+# Set up OpenAI API key from environment variable
+openai.api_key = os.getenv('OPENAI_API_KEY')
 
-class AGIAgent:
-    """
-    A basic AGI agent that uses OpenAI's GPT model to process inputs and generate responses.
-    
-    Attributes:
-        client (OpenAI): The OpenAI client instance.
-        model (str): The model to use for completions.
-        conversation_history (List[Dict]): History of the conversation for context.
-    """
-    
-    def __init__(self, model: str = "gpt-4"):
-        """
-        Initialize the AGI agent.
-        
-        Args:
-            model (str): The OpenAI model to use. Default is "gpt-4".
-        """
-        self.client = OpenAI(api_key=OPENAI_API_KEY)
-        self.model = model
-        self.conversation_history = []
-    
-    def add_to_history(self, role: str, content: str):
-        """
-        Add a message to the conversation history.
-        
-        Args:
-            role (str): The role of the speaker, e.g., "user" or "assistant".
-            content (str): The content of the message.
-        """
-        self.conversation_history.append({"role": role, "content": content})
-    
-    def process_input(self, user_input: str) -> str:
-        """
-        Process the user input and generate a response using OpenAI API.
-        
-        Args:
-            user_input (str): The input from the user.
-        
-        Returns:
-            str: The generated response from the agent.
-        """
-        # Add user input to history
-        self.add_to_history("user", user_input)
-        
+class AGI:
+    def __init__(self, model_name: str = 'gpt-4', max_tokens: int = 2048):
+        """Initialize the AGI system with a specific model and parameters.""
+        self.model_name = model_name
+        self.max_tokens = max_tokens
+
+    def generate_response(self, prompt: str, temperature: float = 0.7, top_p: float = 1.0) -> str:
+        """Generate a response from the model given a prompt.""
         try:
-            # Call OpenAI API with current conversation history
-            response = self.client.chat.completions.create(
-                model=self.model,
-                messages=self.conversation_history,
-                max_tokens=150,
-                temperature=0.7
+            response = openai.Completion.create(
+                engine=self.model_name,
+                prompt=prompt,
+                max_tokens=self.max_tokens,
+                temperature=temperature,
+                top_p=top_p
             )
-            
-            # Extract the assistant's response
-            assistant_response = response.choices[0].message.content
-            
-            # Add assistant response to history
-            self.add_to_history("assistant", assistant_response)
-            
-            return assistant_response
-        
+            return response.choices[0].text.strip()
         except Exception as e:
-            # Handle errors gracefully
-            return f"Error processing input: {e}"
-    
-    def run(self):
-        """
-        Run the AGI agent in an interactive loop.
-        """
-        print("AGI Agent Initialized. Type 'exit' to quit.")
-        while True:
-            try:
-                user_input = input("You: ")
-                if user_input.lower() == 'exit':
-                    print("Exiting AGI Agent.")
-                    break
-                
-                response = self.process_input(user_input)
-                print(f"AGI: {response}")
-            
-            except KeyboardInterrupt:
-                print("\nInterrupted. Exiting.")
-                break
-            except Exception as e:
-                print(f"An error occurred: {e}")
+            return f"Error: {str(e)}"
 
+    def chat_with_ai(self, messages: List[Dict[str, str]], temperature: float = 0.7, top_p: float = 1.0) -> str:
+        """Chat with the AI using a list of message history.""
+        try:
+            response = openai.ChatCompletion.create(
+                model=self.model_name,
+                messages=messages,
+                temperature=temperature,
+                top_p=top_p
+            )
+            return response.choices[0].message.content.strip()
+        except Exception as e:
+            return f"Error: {str(e)}"
 
-if __name__ == "__main__":
-    # Entry point for running the agent
-    agent = AGIAgent()
-    agent.run()
+    def set_model(self, model_name: str):
+        """Change the model used by the AGI system.""
+        self.model_name = model_name
+
+    def set_max_tokens(self, max_tokens: int):
+        """Set the maximum number of tokens for responses.""
+        self.max_tokens = max_tokens
+
+if __name__ == '__main__':
+    # Example usage of the AGI class
+    agi = AGI(model_name='gpt-3.5-turbo')
+    response = agi.generate_response("What is the capital of France?")
+    print(f"AGI Response: {response}")
+
+    # Chat example
+    messages = [
+        {"role": "system", "content": "You are an AI assistant."},
+        {"role": "user", "content": "Who won the 2022 FIFA World Cup?"}
+    ]
+    chat_response = agi.chat_with_ai(messages)
+    print(f"Chat Response: {chat_response}")
