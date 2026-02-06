@@ -1,51 +1,16 @@
-# AGI Agent Project
+# agi
 
-This project implements a basic Artificial General Intelligence (AGI) agent using the OpenAI API. It simulates AGI-like behavior through conversational interactions.
+## 项目描述
+实现一个真正意义上的agi，如果使用的模型api用openai api
 
-## Features
-- Interactive command-line interface
-- Uses OpenAI's GPT models for intelligent responses
-- Error handling and environment variable management
-- Extensible design for future enhancements
+## 提案执行
+- 提案标题：技术方案提案
+- 描述：基于项目'agi'的需求分析
+- 技术方案：需要进一步分析确定具体技术方案
+- 预期结果：完成项目核心功能开发
 
-## Setup
+## 开发状态
+代码生成遇到问题，需要人工介入完善。
 
-1. **Install dependencies:**
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-2. **Set up environment variables:**
-   - Copy `.env.example` to `.env`
-   - Replace `your_openai_api_key_here` with your actual OpenAI API key
-
-3. **Run the agent:**
-   ```bash
-   python main.py
-   ```
-
-## Usage
-- Type your queries or commands in the terminal.
-- The AGI agent will respond based on the context.
-- Type 'exit' or 'quit' to end the session.
-
-## Architecture
-- `main.py`: Core AGI agent logic with OpenAI API integration.
-- `requirements.txt`: Python dependencies.
-- `.env`: Environment configuration (not tracked in version control).
-
-## Best Practices Followed
-- API keys stored securely via environment variables
-- Modular code with clear functions and documentation
-- Error handling for API calls and user input
-- Use of type hints and docstrings
-
-## Future Enhancements
-- Add memory persistence for context across sessions
-- Integrate tools (e.g., web search, file operations)
-- Support for multimodal inputs (images, audio)
-- Deployment as a web service
-
-## Notes
-- This is a simplified AGI simulation; true AGI requires advanced research.
-- Ensure compliance with OpenAI's usage policies.
+## 下一步
+根据提案内容继续开发。

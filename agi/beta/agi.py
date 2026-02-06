@@ -1,46 +1,49 @@
-# AGI Implementation using OpenAI API
-# This file contains the core logic for the AGI system
+# AGI (Artificial General Intelligence) Implementation using OpenAI API
+# This file contains the core logic for interacting with the OpenAI API to simulate an AGI system.
 
 import openai
 import os
-from typing import Dict, Any, List
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Set up OpenAI API key
 openai.api_key = os.getenv('OPENAI_API_KEY')
 
-class AGI:
-    def __init__(self, model_name: str = 'gpt-4'):
-        self.model_name = model_name
-        self.history = []
+# Define a function to generate responses using the OpenAI API
+def generate_response(prompt):
+    """Generate a response based on the given prompt using OpenAI's GPT model.
 
-    def add_to_history(self, role: str, content: str):
-        """Add a message to the conversation history."""
-        self.history.append({"role": role, "content": content})
+    Args:
+        prompt (str): The input prompt for the AI model.
 
-    def get_response(self, prompt: str) -> str:
-        """Get a response from the OpenAI model based on the prompt."""
-        self.add_to_history("user", prompt)
-        response = openai.ChatCompletion.create(
-            model=self.model_name,
-            messages=self.history
+    Returns:
+        str: The generated response from the AI model.
+    """
+    try:
+        response = openai.Completion.create(
+            engine="text-davinci-003",  # Using GPT-3.5 model
+            prompt=prompt,
+            max_tokens=150,  # Maximum number of tokens in the response
+            n=1,  # Number of responses to generate
+            stop=None,  # Stop generating when the model reaches this token
+            temperature=0.7  # Controls the randomness of the output
         )
-        response_content = response.choices[0].message.content
-        self.add_to_history("assistant", response_content)
-        return response_content
+        return response.choices[0].text.strip()
+    except Exception as e:
+        return f"Error: {str(e)}"
 
-    def reset_conversation(self):
-        """Reset the conversation history."""
-        self.history = []
-
-    def get_conversation_history(self) -> List[Dict[str, Any]]:
-        """Get the current conversation history."""
-        return self.history
+# Example usage of the AGI system
+def main():
+    print("Welcome to the AGI System!")
+    while True:
+        user_input = input("You: ")
+        if user_input.lower() in ["exit", "quit"]:
+            print("Goodbye!")
+            break
+        response = generate_response(user_input)
+        print(f"AGI: {response}")
 
 if __name__ == "__main__":
-    # Example usage of the AGI class
-    agi = AGI()
-    print(agi.get_response("Hello, how can I assist you?"))
-    print(agi.get_response("Can you explain what AGI is?"))
-    print(agi.get_response("What are the challenges in creating AGI?"))
-    agi.reset_conversation()
-    print(agi.get_response("Can you summarize the conversation so far?"))
+    main()
