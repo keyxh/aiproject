@@ -1,34 +1,12 @@
 # agi
 
-```json
+ ```json
 {
-    "files": [
-        {
-            "filename": "agi.py",
-            "content": "import openai
-
-# 初始化OpenAI API客户端
-openai.api_key = 'your_openai_api_key'
-
-def generate_response(prompt):
-    # 调用OpenAI的text-davinci-003模型生成文本
-    response = openai.Completion.create(
-        engine="text-davinci-003",
-        prompt=prompt,
-        max_tokens=150  # 设置生成文本的最大字符数
-    )
-    # 返回生成文本的第一行作为回复
-    return response.choices[0].text.strip()
-
-if __name__ == '__main__':
-    user_input = input('请输入您的问题: ')
-    print(generate_response(user_input))
-"
-        },
-        {
-            "filename": "config.json",
-            "content": "{\n    \"openai_api_key\": \"your_openai_api_key\"\n}"
-        }
-    ]
-}
-```
+  "files": [
+    {
+      "filename": "config.py",
+      "content": "\"\"\"\nConfiguration module for AGI system.\nHandles environment variables and system constants.\n\"\"\"\nimport os\nfrom typing import Optional\nfrom dotenv import load_dotenv\n\nload_dotenv()\n\n\nclass Config:\n    \"\"\"System configuration singleton.\"\"\"\n    \n    # OpenAI Configuration\n    OPENAI_API_KEY: str = os.getenv(\"OPENAI_API_KEY\", \"\")\n    MODEL_NAME: str = os.getenv(\"MODEL_NAME\", \"gpt-4o\")\n    EMBEDDING_MODEL: str = os.getenv(\"EMBEDDING_MODEL\", \"text-embedding-3-small\")\n    \n    # Agent Behavior\n    MAX_ITERATIONS: int = int(os.getenv(\"MAX_ITERATIONS\", \"10\"))\n    TEMPERATURE: float = float(os.getenv(\"TEMPERATURE\", \"0.7\"))\n    MAX_TOKENS: int = int(os.getenv(\"MAX_TOKENS\", \"4000\"))\n    \n    # Memory Configuration\n    MEMORY_LIMIT: int = int(os.getenv(\"MEMORY_LIMIT\", \"100\"))\n    SHORT_TERM_MEMORY_SIZE: int = int(os.getenv(\"SHORT_TERM_MEMORY_SIZE\", \"10\"))\n    \n    # Safety\n    ALLOW_CODE_EXECUTION: bool = os.getenv(\"ALLOW_CODE_EXECUTION\", \"false\").lower() == \"true\"\n    \n    @classmethod\n    def validate(cls) -> None:\n        \"\"\"Validate critical configuration.\"\"\"\n        if not cls.OPENAI_API_KEY:\n            raise ValueError(\"OPENAI_API_KEY environment variable is required\")\n"
+    },
+    {
+      "filename": "memory.py",
+      "content": "\"\"\"\nMemory system for AGI.\nImplements short-term working memory and long-term episodic memory\nusing vector embeddings for retrieval.\n\"\"\"\nimport json\nimport openai\nfrom typing import List, Dict, Any, Optional\nfrom datetime import datetime\nimport numpy as np\nfrom config import Config\n\n\nclass MemoryEntry:\n    \"\"\"Single memory entry with metadata.\"\"\"\n    \n    def __init__(self, content: str, memory_type: str = \"observation\", importance: float = 1.0):\n        self.content = content\n        self.memory_type = memory_type  # observation, thought, action, reflection\n        self.timestamp = datetime.now().isoformat()\n        self.importance = importance\n        self.embedding: Optional[List[float]] = None\n    \n    def to_dict(self) -> Dict[str, Any]:\n        return {\n            \"content\": self.content,\n            \"type\": self.memory_type,\n            \"timestamp\": self.timestamp,\n            \"importance\": self.importance\n        }\n\n\nclass MemorySystem:\n    \"\"\"\n    Hierarchical memory system with short-term and long-term storage.\n    Uses embeddings for semantic retrieval.\n    \"\"\"\n    \n    def __init__(self):\n        self.short_term: List[MemoryEntry] = []  # Working memory\n        self.long_term: List[MemoryEntry] = []   # Episodic memory\n        self.client = openai.OpenAI(api_key=Config.OPENAI_API_KEY)\n    \n    def add_memory(self, content: str, memory_type: str = \"observation\", \n                   importance: float = 1.0, store_long_term: bool = False) -> None:\n        \"\"\"Add a new memory to the system.\"\"\"\n        entry = MemoryEntry(content, memory_type, importance)\n        \n        # Always add to short-term\n        self.short_term.append(entry)\n        if len(self.short_term) > Config.SHORT_TERM_MEMORY_SIZE:\n            # Move oldest to long-term if important enough\n            oldest = self.short_term.pop(0)\n            if oldest.importance > 0.5 or store_long_term:\n                self._store_long_term(oldest)\n        \n        # Direct long-term storage for important memories\n        if store_long_term:\n            self._store_long_term(entry)\n    \n    def _store_long_term(self, entry: MemoryEntry) -> None:\n        \"\"\"Store memory in long-term with embedding.\"\"\"\n        try:\n            response = self.client.embeddings.create(\n                model=Config.EMBEDDING_MODEL,\n                input=entry.content\n            )\n            entry.embedding = response.data[0].embedding\n            self.long_term.append(entry)\n            \n            # Maintain size limit\n            if len(self.long_term) > Config.MEMORY_LIMIT:\n                self.long_term.sort(key=lambda x: x.importance)\n                self.long_term.pop(0)\n        except Exception as e:\n            print(f\"Warning: Failed to create embedding: {e}\")\n            self.long_term.append(entry)\n    \n    def retrieve_relevant(self, query: str, k: int = 5) -> List[str]:\n        \"\"\"Retrieve most relevant memories based on semantic similarity.\"\"\"\n        if not self.long_term or not any(m.embedding for m in self.long_term):\n            return [m.content for m in self.short_term[-k:]]\n
