@@ -1,31 +1,6 @@
 # agi
 
-```json
-{
-    "files": [
-        {
-            "filename": "agi.py",
-            "content": "import openai
-
-# 初始化OpenAI API客户端
-openai.api_key = 'your_openai_api_key'
-
-def generate_response(prompt):
-    # 调用OpenAI的文本生成API
-    response = openai.Completion.create(
-        engine='text-davinci-003',
-        prompt=prompt,
-        max_tokens=150  # 设置返回的最大字符数
-    )
-    # 返回生成的文本
-    return response.choices[0].text.strip()
-
-if __name__ == '__main__':
-    # 示例：生成一段文本
-    user_input = input('请输入提示信息: ')
-    generated_text = generate_response(user_input)
-    print('生成的文本: ', generated_text)"
-        }
-    ]
-}
-```
+ "files": [
+    {
+      "filename": "main.py",
+      "content": "'''\nAGI系统的主要入口点。\n\n这是AGI系统的核心，将用户输入转换为模型API的请求，并处理模型API的响应。\n'''\n\n\"\"\"设置AGI环境的模板。\n\n这个模块包含AGI系统所需的基本设置，例如模型初始化和输入预处理。\n\"\"\"\n\nfrom .model_api import ModelAPI\n\n# AGI系统的主要入口点。\nclass AGI:\n    def __init__(self, model_api):\n        \"\"\"\n        初始化AGI系统，设置模型API。\n        \n        参数:\n            model_api (ModelAPI): AGI系统使用的模型API实例。\n        \"\"\"\n        self.model_api = model_api\n\n    def process_input(self, user_input):\n        \"\"\"\n        处理用户输入，将其转换为模型API的请求。\n        \n        参数:\n            user_input (str): 用户输入的字符串。\n        \n        返回:\n            str: 模型API处理后的响应。\n        \"\"\"\n        # 在这里添加用户输入的预处理\n        processed_input = user_input.strip()\n        \n        # 将处理后的输入发送到模型API\n        response = self.model_api.query(processed_input)\n        \n        return response\n\n# AGI系统模型API的实现。\nclass ModelAPI:\n    def __init__(self, api_key):\n        \"\"\"\n        初始化模型API，设置OpenAI API密钥。\n        \n        参数:\n            api_key (str): OpenAI API密钥。\n        \"\"\"\n        self.api_key = api_key\n\n    def query(self, prompt):\n        \"\"\"\n        将提示发送到模型API，并返回模型的响应。\n        \n        参数:\n            prompt (str): 模型API处理的提示。\n        \n        返回:\n            str: 模型API处理后的响应。\n        \"\"\"\n        # 在这里添加模型API的实际调用和处理\n        # 例如，使用OpenAI的Python客户端进行API调用\n        # 现在只是一个模板，实际调用需要实现\n        response = f\"模型API处理后的响应: {prompt}\"\n        return response\n  ]
