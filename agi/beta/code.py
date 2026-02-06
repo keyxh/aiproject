@@ -1,12 +1,12 @@
 # agi
 
- "files": [
+```json
+{
+  "files": [
     {
       "filename": "main.py",
-      "content": "'''\n# agi_main.py\n\n# 这是 AGI 的主要入口点。\n\n# 引入必要的模块\n\n# 实现 AGI 逻辑\n\n# 运行 AGI 系统\n\n'''\n"
-    },
-    {
-      "filename": "agi.py",
-      "content": "'''\n# agi.py\n\n# AGI 系统的核心逻辑。\n\ndef run_agi():\n    \"\"\"\n    AGI 系统的主要执行逻辑。\n    \"\"\"\n    # 使用 OpenAI API 进行模型调用\n    # 模型调用的结果处理\n    pass\n\n'''\n"
+      "content": "import openai\n\n# Set your OpenAI API key\nopenai.api_key = \"YOUR_API_KEY\"\n\ndef query_agi(prompt):\n    \"\"\"\n    Queries the AGI model using the OpenAI API.\n\n    Args:\n        prompt (str): The prompt to send to the AGI model.\n\n    Returns:\n        str: The response from the AGI model.\n    \"\"\"\n    response = openai.Completion.create(\n        engine=\"text-davinci-003\",  # Use a suitable OpenAI engine\n        prompt=prompt,\n        max_tokens=1024,  # Adjust as needed\n        temperature=0.7  # Adjust for creativity\n    )\n    return response.choices[0].text\n\nif __name__ == \"__main__\":\n    user_input = input(\"You: \")\n    response = query_agi(user_input)\n    print(\"AGI: \" + response)"
+    }
   ]
 }
+```
