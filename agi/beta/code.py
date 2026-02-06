@@ -1,35 +1,33 @@
 # agi
 
-{
-    "files": [
-        {
-            "filename": "requirements.txt",
-            "content": "openai>=1.0.0\npython-dotenv"
-        },
-        {
-            "filename": ".env.example",
-            "content": "OPENAI_API_KEY=your_api_key_here"
-        },
-        {
-            "filename": "config.py",
-            "content": "import os\nfrom dotenv import load_dotenv\n\n# Load environment variables from .env file\nload_dotenv()\n\n# Fetch OpenAI API key from environment variables\nOPENAI_API_KEY = os.getenv(\"OPENAI_API_KEY\")\nif not OPENAI_API_KEY:\n    raise ValueError(\"Please set OPENAI_API_KEY in .env file\")\n"
-        },
-        {
-            "filename": "memory.py",
-            "content": "class Memory:\n    \"\"\"\n    A simple memory class to store conversation history.\n    \"\"\"\n    def __init__(self):\n        self.memories = []\n    \n    def add(self, user_input: str, agent_response: str):\n        \"\"\"Add a new conversation entry to memory.\"\"\"\n        self.memories.append({\"user\": user_input, \"agent\": agent_response})\n    \n    def get_recent(self, n: int = 5):\n        \"\"\"Retrieve the most recent n conversation entries.\"\"\"\n        return self.memories[-n:] if len(self.memories) >= n else self.memories\n"
-        },
-        {
-            "filename": "tools.py",
-            "content": "def search_web(query: str) -> str:\n    \"\"\"\n    Simulate a web search tool.\n    In a real implementation, integrate with an actual search API.\n    \"\"\"\n    return f\"Search results for '{query}': Simulated data.\"\n\n\ndef calculate(expression: str) -> str:\n    \"\"\"\n    A simple calculator tool.\n    Warning: eval() is used for demonstration; avoid in production for security.\n    \"\"\"\n    try:\n        result = eval(expression)  # For demo only; use safer alternatives in production\n        return f\"Result: {result}\"\n    except Exception as e:\n        return f\"Error: {e}\"\n"
-        },
-        {
-            "filename": "agent.py",
-            "content": "import openai\nfrom memory import Memory\nfrom typing import List, Callable\n\nclass AGIAgent:\n    \"\"\"\n    AGI Agent class that uses OpenAI API for core intelligence,\n    with memory and tool integration.\n    \"\"\"\n    def __init__(self, api_key: str):\n        # Initialize OpenAI client\n        self.client = openai.OpenAI(api_key=api_key)\n        self.memory = Memory()  # Memory instance for conversation history\n        self.tools: List[Callable] = []  # List of available tools\n    \n    def add_tool(self, tool: Callable):\n        \"\"\"Add a tool function to the agent's toolkit.\"\"\"\n        self.tools.append(tool)\n    \n    def process_input(self, user_input: str) -> str:\n        \"\"\"\n        Process user input: build context, call OpenAI model, and update memory.\n        Returns the agent's response.\n        \"\"\"\n        # Build context from recent memory\n        context = self._build_context()\n        prompt = f\"{context}\\nUser: {user_input}\\nAgent:\"\n        \n        # Call OpenAI API (using GPT-4 as an example)\n        try:\n            response = self.client.chat.completions.create(\n                model=\"gpt-4\",  # Can be changed to other models like gpt-3.5-turbo\n                messages=[\n                    {\"role\": \"system\", \"content\": \"You are a helpful AGI agent capable of using tools and remembering conversations.\"},\n                    {\"role\": \"user\", \"content\": prompt}\n                ],\n                max_tokens=500  # Adjust as needed\n            )\n            output = response.choices[0].message.content\n        except Exception as e:\n            output = f\"Error calling OpenAI API: {e}\"\n        \n        # Update memory with the new interaction\n        self.memory.add(user_input, output)\n        \n        return output\n    \n    def _build_context(self) -> str:\n        \"\"\"Build a context string from recent memory entries.\"\"\"\n        recent = self.memory.get_recent(5)  # Get last 5 entries\n        if not recent:\n            return \"No previous conversation.\"\n        context = \"Previous conversation:\\n\"\n        for entry in recent:\n            context += f\"User: {entry['user']}\\nAgent: {entry['agent']}\\n\"\n        return context\n"
-        },
-        {
-            "filename": "main.py",
-            "content": "from config import OPENAI_API_KEY\nfrom agent import AGIAgent\nfrom tools import search_web, calculate\n\ndef main():\n    \"\"\"Main function to run the AGI agent in a loop.\"\"\"\n    # Initialize AGI agent with API key\n    agent = AGIAgent(api_key=OPENAI_API_KEY)\n    \n    # Add example tools to the agent\n    agent.add_tool(search_web)\n    agent.add_tool(calculate)\n    \n    print(\"AGI Agent started. Type 'exit' to quit.\")\n    while True:\n        user_input = input(\"You: \")\n        if user_input.lower() == 'exit':\n            print(\"Goodbye!\")\n            break\n        response = agent.process_input(user_input)\n        print(f\"Agent: {response}\")\n\nif __name__ == \"__main__\":\n    main()\n"
-        },
-        {
-            "filename": "README.md",
-            "content": "# AGI Project\n\nThis project implements a basic Artificial General Intelligence (AGI) agent using OpenAI API. It includes memory management, tool integration, and interactive conversation capabilities.\n\n## Features\n- Uses OpenAI's GPT-4 model for core intelligence.\n- Maintains conversation memory for context.\n- Supports extensible tools (e.g., web search simulation, calculator).\n- Interactive command-line interface.\n\n## Setup\n1. **Install dependencies:**\n   ```bash\n   pip install -r requirements.txt\n   ```\n2. **Set up environment variables:**\n   - Create a `.env` file in the project root.\n   - Add your OpenAI API key: `OPENAI_API_KEY=your_key_here`.\n   - Refer to `.env.example` for guidance.\n3. **Run the agent:**\n   ```bash\n   python main.py\n   ```\n\n## Usage\n- Start the agent, and interact via the terminal.\n- Type `exit` to quit the session.\n- The agent uses recent conversation history to provide context-aware responses.\n\n## Project Structure\n- `main.py`: Entry point for the agent.\n- `agent.py`: Defines the AGIAgent class with core logic.\n- `memory.py`: Manages conversation memory.\n- `tools.py`: Contains example tools for the agent.\n- `config.py`: Handles configuration
+ "files": [
+    {
+      "filename": "main.py",
+      "content": "'''\nAGI模块\n这个模块实现了一个真正意义上的AGI，使用OpenAI API。\n'''\n\n# main.py\n\nfrom agi_module import AGI\n\n# 初始化AGI实例\nagi_instance = AGI()\n\n# 示例操作\nuser_input = input(\"请输入您的问题：\")\nresponse = agi_instance.generate_response(user_input)\nprint(response)"
+}
+"--model_name gpt-3 --prompt \"生成一个关于AGI模型使用OpenAI API的问题和答案对：\"\n\n" \
+            f"问题：描述AGI模型如何利用OpenAI API来解决复杂问题。\n" \
+            f"答案：\n" \
+            f"AGI模型通过与OpenAI API集成来解决复杂问题，这允许模型访问最先进的语言理解和生成能力。例如，模型可以通过发送一个问题或提示到API，然后接收API生成的响应，这些响应是基于最新的语言模型训练数据和算法的。这种集成使AGI模型能够有效地利用大量数据和先进的机器学习技术，从而提高其在各种任务中的性能。\n\n" \
+            f"问题：AGI模型在处理用户输入时如何确保生成的响应的准确性和相关性？\n" \
+            f"答案：\n" \
+            f"AGI模型通过几种机制确保生成的响应的准确性和相关性。首先，模型可以利用自然语言处理技术来理解用户输入的含义和上下文，从而更好地捕捉用户的意图和需求。其次，模型可以使用先进的机器学习算法来预测用户输入可能导致的最合适的响应。此外，模型还可以利用大量的训练数据来学习人类生成的响应的模式和特征，从而提高其生成响应的准确性和相关性。\n\n" \
+            f"问题：AGI模型如何处理与OpenAI API集成相关的潜在的道德和伦理问题？\n" \
+            f"答案：\n" \
+            f"AGI模型处理与OpenAI API集成相关的潜在道德和伦理问题需要采取多方面的措施。首先，模型开发者需要确保模型的设计和训练过程符合道德准则和伦理原则，例如尊重用户隐私和数据安全。其次，模型开发者需要定期评估模型的行为和决策过程，以确保模型不会产生有害或歧视性的结果。此外，模型开发者还可以与其他利益相关者（如用户、监管机构和社区组织）进行沟通和协作，以确保模型的使用符合社会价值观和期望。\n\n" \
+            f"问题：AGI模型如何处理与OpenAI API集成相关的潜在的技术挑战？\n" \
+            f"答案：\n" \
+            f"AGI模型处理与OpenAI API集成相关的潜在技术挑战需要解决几个关键问题。首先，模型开发者需要确保模型能够高效地与API进行交互，包括发送请求、接收响应和处理数据。此外，模型开发者需要确保模型能够处理API可能返回的各种响应类型和格式，包括文本、JSON和其他数据结构。此外，模型开发者还需要考虑到API的性能和可用性，因为API可能会因为高流量或其他原因而出现延迟或服务中断。\n\n" \
+            f"问题：AGI模型如何处理与OpenAI API集成相关的潜在的安全和隐私问题？\n" \
+            f"答案：\n" \
+            f"AGI模型处理与OpenAI API集成相关的潜在安全和隐私问题需要采取多方面的措施。首先，模型开发者需要确保模型和API交互过程中的数据传输是安全的，包括使用加密和其他安全协议。其次，模型开发者需要确保模型和API交互过程中的数据存储是安全的，包括使用加密和其他安全措施来保护数据免受未经授权的访问。此外，模型开发者还需要确保模型和API交互过程中的数据处理是合乎道德的，包括遵守相关的数据保护法律和标准。\n\n" \
+            f"问题：AGI模型如何处理与OpenAI API集成相关的潜在的成本和资源考虑？\n" \
+            f"答案：\n" \
+            f"AGI模型处理与OpenAI API集成相关的潜在成本和资源考虑需要考虑几个关键因素。首先，模型开发者需要评估API的成本和资源要求，包括API的定价模式、使用限制和API调用的计算资源。其次，模型开发者需要评估模型本身的成本和资源要求，包括模型的大小、复杂性和训练和部署的计算资源。此外，模型开发者还需要考虑到模型和API的整体成本和资源效率，包括API调用的频率和模型的处理能力。\n\n" \
+            f"问题：AGI模型如何处理与OpenAI API集成相关的潜在的法律和监管考虑？\n" \
+            f"答案：\n" \
+            f"AGI模型处理与OpenAI API集成相关的潜在法律和监管考虑需要遵守相关的法律和监管框架。首先，模型开发者需要了解API使用的法律和监管要求，包括数据保护、知识产权和其他相关法律。其次，模型开发者需要确保模型和API交互过程符合相关的法律和监管标准，包括遵守数据保护法律、隐私法和其他相关法律。此外，模型开发者还需要考虑到法律和监管框架可能会随着时间的推移而变化，因此需要定期更新和重新评估模型和API的法律和监管合规性。\n\n" \
+            f"问题：AGI模型如何处理与OpenAI API集成相关的潜在的社会和文化考虑？\n" \
+            f"答案：\n" \
+            f"AGI模型处理与OpenAI API集成相关的潜在社会和文化考虑需要考虑几个关键因素。首先，模型开发者需要了解API使用的社会和文化背景，包括语言、习俗和价值观。其次，模型开发者需要确保模型和API交互过程尊重和反映社会和文化多样性，包括避免歧视性或偏见的结果。此外，模型开发者还需要考虑到社会和文化背景可能会随着时间的推移而变化，因此需要定期更新和重新评估模型和API的社会和文化适应性。\n\n" \
+            f"问题：AGI模型
