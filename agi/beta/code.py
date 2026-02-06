@@ -1,17 +1,24 @@
 # agi
 
- "files": [
-    {
-      "filename": "main.py",
-      "content": "主程序入口点\n\n# 模拟AGI系统的主要进程\n\nif __name__ == \"__main__\":\n    agi_system = AGISystem()\n    agi_system.run()"
-    },
-    {
-      "filename": "agi_system.py",
-      "content": "AGISystem类定义AGI系统的行为\n\nclass AGISystem:\n    def __init__(self):\n        self.model_api = OpenAIModelAPI()\n\n    def run(self):\n        # 这里应该包含AGI系统的主要逻辑，例如处理输入、生成响应等。\n        # 由于这是一个简化的示例，我们只会模拟一个调用\n        self.model_api.interact()\n\n    # 可能包含其他AGI系统方法，例如处理用户输入、学习等。\n\n# OpenAIModelAPI模拟使用OpenAI模型的API\n\nclass OpenAIModelAPI:\n    def interact(self):\n        # 这里应该包含与OpenAI模型的交互逻辑，例如发送提示和接收响应\n        # 由于这是一个简化的示例，我们只会打印一条消息\n        print(\"模拟与OpenAI模型的交互...\")"
-    },
-    {
-      "filename": "openai_model_api.py",
-      "content": "模拟OpenAI模型API的类\n\nclass OpenAIModelAPI:\n    def __init__(self):\n        # 初始化模拟OpenAI模型API的参数\n        pass\n\n    def interact(self):\n        # 模拟与OpenAI模型的交互\n        # 在这里，我们可以模拟发送提示和接收响应的逻辑\n        pass\n"
-    }
-  ]
+```json
+{
+    "files": [
+        {
+            "filename": "agi.py",
+            "content": "# agi.py\n\nimport openai\nfrom typing import Any, Dict, Optional\n\nclass AGI:\n    def __init__(self, api_key: str):\n        self.api_key = api_key\n        self.api = openai.OpenAI(api_key=self.api_key)\n\n    def generate_response(self, prompt: str, max_tokens: int = 150) -> str:\n        """Generate a response using the OpenAI API.\n\n        Args:\n            prompt (str): The user's input prompt.\n            max_tokens (int): The maximum number of tokens to generate.\n\n        Returns:\n            str: The generated response.\n        \n        Raises:\n            openai.error.OpenAIError: If there is an error with the OpenAI API.\n        """\n        try:\n            response = self.api.Completion.create(\n                engine='text-davinci-002',\n                prompt=prompt,\n                max_tokens=max_tokens\n            )\n            return response.choices[0].text.strip()\n        except openai.error.OpenAIError as e:\n            print(f'An error occurred: {e}\n            return None\n\n# Example usage\nif __name__ == "__main__":\n    api_key = 'your_openai_api_key_here'\n    agi_instance = AGI(api_key=api_key)\n    user_input = 'Tell me a joke'\n    response = agi_instance.generate_response(prompt=user_input)\n    if response:\n        print('AGI Response:', response)\n    else:\n        print('Failed to generate a response. Please check your API key and try again.')"
+        },
+        {
+            "filename": "README.md",
+            "content": "# AGI Project\n\nThis project aims to create a truly advanced Artificial General Intelligence (AGI) using the OpenAI API.\n\n## Features\n- Utilizes OpenAI's powerful language models.\n- Can generate human-like text responses to user prompts.\n\n## Setup\n\n1. Install OpenAI Python package:\n    ```bash\n    pip install openai\n    ```\n\n2. Obtain an OpenAI API key from [OpenAI Dashboard](https://platform.openai.com/account/api-keys).\n\n3. Set the API key in the `agi.py` file:\n    ```python\n    api_key = 'your_openai_api_key_here'\n    ```\n\n## Usage\n\nTo generate a response, simply call the `generate_response` method on an instance of the `AGI` class:\n    ```python\n    from agi import AGI\n    agi_instance = AGI(api_key=api_key)\n    response = agi_instance.generate_response(prompt='What is the weather like today?')\n    print(response)\n    ```\n\n## Contributing\n\nContributions are welcome. Please follow the contributing guidelines outlined in the [CONTRIBUTING.md](CONTRIBUTING.md) file."
+        },
+        {
+            "filename": "CONTRIBUTING.md",
+            "content": "# Contributing to AGI Project\n\nContributions to the AGI project are welcome! Please read the following guidelines to help us maintain a high-quality, consistent codebase.\n\n## Contributing Guidelines\n\n1. **Fork the Repository**: Create a fork of the repository on GitHub.\n\n2. **Create a Topic Branch**: Off of the forked repository, create a new branch for your changes.\n\n3. **Commit Your Changes**: Make your changes and commit them to your branch.\n\n4. **Push Your Branch**: Push your branch to the remote repository.\n\n5. **Open a Pull Request**: Open a pull request from your branch to the main repository.\n\n6. **Follow the Code of Conduct**: Ensure that your contributions adhere to the [Code of Conduct](CODE_OF_CONDUCT.md).\n\n## Code of Conduct\n\nThe AGI project is dedicated to providing a harassment-free experience for everyone. Our code of conduct is based on the [Contributor Covenant](https://www.contributor-covenant.org/version/2/0/code_of_conduct/).\n\nBy participating in this project, you agree to abide by the code of conduct."
+        },
+        {
+            "filename": "CODE_OF_CONDUCT.md",
+            "content": "# Code of Conduct\n\nThis code of conduct outlines our expectations for participants in the AGI project. We want this project to be an inclusive and welcoming environment for all.\n\n## Our Pledge\n\nWe pledge to be respectful. We are committed to making participation in our project a harassment-free experience for everyone, regardless of age, body size, disability, ethnicity, gender identity and expression, level of experience, education, socio-economic status, nationality, personal appearance, race, religion, or sexual identity and orientation.\n\n## Our Standards\n\nExamples of behavior that contributes to creating a positive environment include:\n\n- Using welcoming and inclusive language.\n- Being respectful of differing opinions.\n- Gracefully accepting constructive criticism.\n\nExamples of unacceptable behavior by participants include:\n\n- The use of sexualized language or imagery.\n- Disrespectful or violent comments towards other participants.\n- Unwelcome sexual attention or advances.\n- Harassing behavior.\n\n## Enforcement\n\nProject maintainers are responsible for clarifying the standards of acceptable behavior and are expected to take appropriate and fair corrective action in response to any instances of unacceptable behavior.\n\nProject maintainers have the right and responsibility to remove, edit, or reject comments, commits, code, wiki edits, issues, and other contributions that are not aligned to this code of conduct, and to ban temporarily or permanently any participant for other behaviors that they deem inappropriate, regardless of whether such behavior is explicitly listed in this code of conduct.\n\n## Reporting\n\nIf you feel you have been subjected to unacceptable behavior, please report it by contacting the project maintainers at [contact information].\n\nAll reports will be treated confidentially. We will follow up with you to investigate and take any necessary corrective action.\n\n## Contact Information\n\n[Contact Information Here]"
+        }
+    ]
 }
+```
