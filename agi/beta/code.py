@@ -1,16 +1,83 @@
 # agi
 
- ```json
+```json
 {
   "files": [
     {
-      "filename": "config.yaml",
-      "content": "# AGI System Configuration\n# 架构师设计的系统配置模板\n\nsystem:\n  name: \"AGI-Core\"\n  version: \"0.1.0-alpha\"\n  \n# 模型配置\nmodel:\n  provider: \"openai\"\n  api_key: \"${OPENAI_API_KEY}\"\n  base_url: \"https://api.openai.com/v1\"\n  default_model: \"gpt-4\"\n  fallback_model: \"gpt-3.5-turbo\"\n  temperature: 0.7\n  max_tokens: 4096\n  \n# 记忆系统配置\nmemory:\n  working_memory_size: 10  # 工作记忆容量\n  short_term_ttl: 3600     # 短期记忆存活时间(秒)\n  long_term_storage: \"vector_db\"  # 长期记忆存储方式\n  embedding_model: \"text-embedding-3-large\"\n  \n# 规划与执行配置\nplanning:\n  max_depth: 5             # 递归规划最大深度\n  reflection_enabled: true # 是否启用自我反思\n  tool_timeout: 30         # 工具调用超时时间\n  \n# 日志与监控\nlogging:\n  level: \"INFO\"\n  format: \"json\"\n  output: \"stdout\"\n  file: \"logs/agi.log\"\n"
+      "filename": "agi.py",
+      "content": """
+import os
+import json
+import requests
+
+class AGI:
+  def __init__(self, api_key):
+    self.api_key = api_key
+    self.model = 'text-davinci-003'
+
+  def query(self, prompt):
+    response = requests.post(
+      f'https://api.openai.com/v1/completions',
+      headers={
+        'Authorization': f'Bearer {self.api_key}',
+        'Content-Type': 'application/json'
+      },
+      json={
+        'model': self.model,
+        'prompt': prompt,
+        'max_tokens': 2048,
+        'temperature': 0.7
+      }
+    )
+    return response.json()['choices'][0]['text']
+
+  def learn(self, data):
+    # TO DO: implement learning functionality
+    pass
+
+  def reason(self, prompt):
+    # TO DO: implement reasoning functionality
+    pass
+
+  def act(self, prompt):
+    # TO DO: implement acting functionality
+    pass
+
+def main():
+  api_key = os.environ['OPENAI_API_KEY']
+  agi = AGI(api_key)
+  prompt = 'Hello, how are you?'
+  response = agi.query(prompt)
+  print(response)
+
+if __name__ == '__main__':
+  main()
+"""
     },
     {
-      "filename": "core/__init__.py",
-      "content": "\"\"\"\nAGI Core Architecture Module\n\n核心架构模块，定义AGI系统的抽象基类和接口规范。\n遵循依赖倒置原则，高层模块不依赖于低层模块，两者都依赖于抽象。\n\"\"\"\n\nfrom .agent import BaseAGIAgent\nfrom .memory import BaseMemorySystem, WorkingMemory, LongTermMemory\nfrom .planner import BasePlanner, PlanNode\nfrom .executor import BaseExecutor, ExecutionContext\n\n__all__ = [\n    'BaseAGIAgent',\n    'BaseMemorySystem', \n    'WorkingMemory',\n    'LongTermMemory',\n    'BasePlanner',\n    'PlanNode', \n    'BaseExecutor',\n    'ExecutionContext'\n]\n"
+      "filename": "requirements.txt",
+      "content": """
+requests
+"""
     },
     {
-      "filename": "core/agent.py",
-      "content": "\"\"\"\nAGI Agent Architecture\n\n基于认知架构的AGI代理设计，包含感知、认知、记忆、执行四个核心层次。\n采用ReAct (Reasoning + Acting) 模式作为基础交互范式。\n\"\"\"\n\nfrom abc import ABC, abstractmethod\nfrom typing import Any, Dict, List, Optional, AsyncGenerator\nfrom dataclasses import dataclass, field\nfrom enum import Enum\nimport asyncio\nimport logging\n\nlogger = logging.getLogger(__name__)\n\n\nclass AgentState(Enum):\n    \"\"\"代理状态机\"\"\"\n    IDLE = \"idle\"\n    PERCEIVING = \"perceiving\"\n    REASONING = \"reasoning\"\n    PLANNING = \"planning\"\n    EXECUTING = \"executing\"\n    REFLECTING = \"reflecting\"\n    ERROR = \"error\"\n\n\n@dataclass\nclass CognitiveContext:\n    \"\"\"\n    认知上下文容器\n    维护代理当前的任务、环境状态和历史轨迹\n    \"\"\"\n    task_id: str\n    goal: str\n    constraints: Dict[str, Any] = field(default_factory=dict)\n    environment_state: Dict[str, Any] = field(default_factory=dict)\n    trajectory: List[Dict] = field(default_factory=list)\n    metadata: Dict[str, Any] = field(default_factory=dict)\n\n\n@dataclass  \nclass AgentResponse:\n    \"\"\"代理响应结构\"\"\"\n    content: str\n    actions: List[Dict[str, Any]]\n    thoughts: str\n    confidence: float\n    state: AgentState\n    requires_feedback: bool = False\n\n\nclass BaseAGIAgent(ABC):\n    \"\"\"\n    AGI代理抽象基类\n    \n    架构职责：\n    1. 协调记忆、规划、执行子系统\n    2. 维护认知状态机\n    3. 提供统一的认知循环接口\n    4. 实现元认知能力（自我监控）\n    \"\"\"\n    \n    def __init__(\n        self,\n        memory_system: Any,\n        planner: Any,\n        executor: Any,\n        model_client: Any,\n        config: Dict[str, Any]\n    ):\n        self.memory = memory_system\n        self.planner = planner\n        self.executor = executor\n        self.model = model_client\n        self.config = config\n        self.state = AgentState.IDLE\n        self._context_stack: List[CognitiveContext] = []\n        \n    async def cognitive_loop(\n        self, \n        input_data: str,\n        context: Optional[CognitiveContext] = None\n    ) -> AsyncGenerator[AgentResponse, None]:\n        \"\"\"\n        核心认知循环\n        \n        流程：感知 -> 检索记忆 -> 推理 -> 规划 -> 执行 -> 反思\n        支持流式输出和中间状态反馈\n        \"\"\"\n        try:\n            # 1. 感知阶段\n            self._transition_state(AgentState.PERCEIVING)\n            perception = await self._perceive(input_data)\n            \n            # 2. 记忆检索\n            relevant_memories = await self.memory.retrieve(\n                query=perception,\n                k=self.config.get('memory_retrieval_k', 5)\n            )\n            \n            # 3. 推理与规划\n            self._transition_state(AgentState.REASONING)\n            reasoning = await self._reason(perception, relevant_memories)\n            \n            if reasoning['requires_planning']:\n                self._transition_state(AgentState.PLANNING)\n                plan = await self.planner.create_plan(\n                    goal=reasoning['goal'],\n                    context=relevant_memories\n                )\n            else:\n                plan = None\n                \n            # 4. 执行阶段\n            self._transition_state(AgentState.EXECUTING)\n            if plan:\n                async for step_result in self._execute_plan(plan):\n                    yield AgentResponse(\n                        content=step_result['observation'],\n                        actions=step_result['actions'],\n                        thoughts=step_result['reasoning'],\n                        confidence=step_result['confidence'],\n                        state=self.state\n                    )\n            else:\n                direct_response = await self._generate_response(\n                    perception, relevant_memories\n                )\n                yield direct_response\n                \n            # 5. 反思与学习\n            if self.config.get('reflection_enabled', True):\n                self._transition_state(AgentState.REFLECTING)\n                await self._reflect_and_learn()\n                \n        except Exception as e:\n            logger.error(f\"Cognitive loop error: {e}\", exc_info=True)\n            self._transition_state(AgentState.ERROR)\n            yield AgentResponse(\n                content=f\"Error occurred: {str(e)}\",\n                actions=[],\n                thoughts=\"Error recovery mode\",\n                confidence=0.0,\n
+      "filename": "README.md",
+      "content": """
+# AGI
+
+This is a basic implementation of a Artificial General Intelligence (AGI) using the OpenAI API.
+
+## Getting Started
+
+1. Install the required libraries by running `pip install -r requirements.txt`.
+2. Set your OpenAI API key as an environment variable by running `export OPENAI_API_KEY='YOUR_API_KEY'`.
+3. Run the AGI by executing `python agi.py`.
+
+## Usage
+
+The AGI can be used to query the OpenAI model by passing a prompt to the `query` method.
+"""
+    }
+  ]
+}
+```
