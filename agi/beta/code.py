@@ -2,66 +2,19 @@
 
 ```json
 {
-  "files": [
-    {
-      "filename": "agi.py",
-      "content": "
-import os
-import json
-from typing import Dict, List
-import openai
-
-# 初始化 OpenAI API
-openai.api_key = 'YOUR_OPENAI_API_KEY'
-
-class AGI:
-    def __init__(self):
-        self.models = {}
-
-    def load_model(self, model_name: str):
-        # 加载模型
-        self.models[model_name] = openai.Model(model_name)
-
-    def get_model(self, model_name: str):
-        # 获取模型
-        return self.models.get(model_name)
-
-    def generate_text(self, model_name: str, prompt: str, max_tokens: int = 1024):
-        # 生成文本
-        model = self.get_model(model_name)
-        if model:
-            response = openai.Completion.create(
-                model=model_name,
-                prompt=prompt,
-                max_tokens=max_tokens
-            )
-            return response['choices'][0]['text']
-        else:
-            return None
-
-    def answer_question(self, model_name: str, question: str):
-        # 回答问题
-        return self.generate_text(model_name, question)
-
-# 示例用法
-agi = AGI()
-agi.load_model('text-davinci-002')
-print(agi.answer_question('text-davinci-002', 'What is the meaning of life?'))
-"
-    },
-    {
-      "filename": "requirements.txt",
-      "content": "
-openai
-"
-    },
-    {
-      "filename": "README.md",
-      "content": "
-# AGI 项目
-实现一个真正意义上的 AGI，如果使用的模型 API 用 OpenAI API。
-"
-    }
-  ]
+    "files": [
+        {
+            "filename": "agi.py",
+            "content": "# agi.py\n\nimport openai\nfrom flask import Flask, request, jsonify\n\napp = Flask(__name__)\n\n# OpenAI API Key\n# Replace 'your_api_key_here' with your actual OpenAI API key\nOPENAI_API_KEY = 'your_api_key_here'\n\n# Initialize OpenAI client\nopenai.api_key = OPENAI_API_KEY\n\n\n\n@app.route('/generate', methods=['POST'])\ndef generate_response():\n    data = request.get_json()\n    prompt = data.get('prompt', '')\n    max_tokens = data.get('max_tokens', 50)\n\n    # Call OpenAI API to generate response\n    response = openai.Completion.create(\n        engine='text-davinci-002',  # Use the appropriate engine\n        prompt=prompt,\n        max_tokens=max_tokens\n    )\n\n    return jsonify({'response': response.choices[0].text.strip()})\n\nif __name__ == '__main__':\n    app.run(debug=True)\n"
+        },
+        {
+            "filename": "requirements.txt",
+            "content": "Flask==2.0.3\nopenai==0.27.0\n"
+        },
+        {
+            "filename": "README.md",
+            "content": "# AGI Project\n\nThis is the README for the AGI project. It aims to create an Artificial General Intelligence using the OpenAI API.\n\n## Features\n\n- Uses OpenAI's GPT-3 model for text generation\n- RESTful API endpoint for generating responses\n\n## Setup\n\n1. Install the required packages:\n    \tpip install -r requirements.txt\n\n2. Run the application:\n    \tpython agi.py\n\n## Usage\n\nSend a POST request to the `/generate` endpoint with a JSON body containing a `prompt` and an optional `max_tokens`.\n\nExample Request:\n\n```json\n{\n    \"prompt\": \"Explain the concept of machine learning in simple terms\",\n    \"max_tokens\": 100\n}\n```"
+        }
+    ]
 }
 ```
