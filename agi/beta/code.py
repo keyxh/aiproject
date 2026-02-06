@@ -1,8 +1,16 @@
 # agi
 
- "files": [
-    {
-      "filename": "main.py",
-      "content": "'''\nAGI系统的主要入口点。\n\n这个模块是AGI系统的核心，它将处理来自各种输入源的输入，并通过模型API与OpenAI进行交互。\n'''\n\n\"\"\"AGI系统的主要入口点。\n\n这个模块是AGI系统的核心，它将处理来自各种输入源的输入，并通过模型API与OpenAI进行交互。\n\"\"\"\n\nfrom .agi_system import AGISystem\n\n# AGI系统实例化\nagi_system = AGISystem()\n\n# 示例输入处理\nuser_input = input(\"请输入您的问题：\")\nresponse = agi_system.handle_input(user_input)\nprint(response)\n"
-]
----
+```json
+{
+    "files": [
+        {
+            "filename": "agi.py",
+            "content": "# agi.py\n\nimport openai\nfrom typing import Optional, Dict, List\n\nclass AGI:\n    def __init__(self, api_key: str):\n        self.api_key = api_key\n        self.client = openai.OpenAI(api_key=self.api_key)\n\n    def generate_response(self, prompt: str, max_tokens: int = 50) -> str:\n        \n        # Call OpenAI's API to generate a response based on the prompt\n        response = self.client.Completion.create(\n            engine=\"text-davinci-002\",\n            prompt=prompt,\n            max_tokens=max_tokens\n        )\n        return response.choices[0].text.strip()\n\n    def ask_question(self, question: str) -> str:\n        \n        # Format the prompt as a question to the AGI\n        formatted_prompt = f\"Answer the following question: {question}\"\n        \n        # Generate a response using the AGI's response generation method\n        response = self.generate_response(formatted_prompt)\n        return response\n"
+        },
+        {
+            "filename": "__init__.py",
+            "content": "# __init__.py\n\nfrom .agi import AGI\n"
+        }
+    ]
+}
+```
