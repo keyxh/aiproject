@@ -1,12 +1,31 @@
 # agi
 
- ```json
+```json
 {
-  "files": [
-    {
-      "filename": "config/settings.py",
-      "content": "\"\"\"\nAGI Project Configuration\n=========================\nCentralized configuration management using Pydantic Settings.\n\"\"\"\nfrom pydantic_settings import BaseSettings\nfrom typing import Optional\n\n\nclass Settings(BaseSettings):\n    \"\"\"Application settings with environment variable support.\"\"\"\n    \n    # OpenAI Configuration\n    openai_api_key: str\n    openai_model: str = \"gpt-4-1106-preview\"\n    openai_temperature: float = 0.7\n    openai_max_tokens: int = 4000\n    \n    # AGI Core Settings\n    max_iterations: int = 10\n    memory_limit: int = 10000\n    reflection_threshold: float = 0.8\n    \n    # Logging\n    log_level: str = \"INFO\"\n    log_format: str = \"%(asctime)s - %(name)s - %(levelname)s - %(message)s\"\n    \n    class Config:\n        env_file = \".env\"\n        env_file_encoding = \"utf-8\"\n\n\nsettings = Settings()\n"
-    },
-    {
-      "filename": "core/memory.py",
-      "content": "\"\"\"\nEpisodic Memory System\n======================\nImplements a vector-based memory store for long-term context retention,\nenabling the AGI to learn from past interactions and maintain coherence.\n\"\"\"\nimport json\nimport hashlib\nfrom datetime import datetime\nfrom typing import List, Dict, Any, Optional\nfrom dataclasses import dataclass, asdict\nimport numpy as np\nfrom openai import AsyncOpenAI\nimport logging\n\nlogger = logging.getLogger(__name__)\n\n\n@dataclass\nclass Memory:\n    \"\"\"Single memory unit representing an observation or experience.\"\"\"\n    content: str\n    timestamp: datetime\n    importance: float  # 0.0 to 1.0\n    embedding: Optional[List[float]] = None\n    metadata: Dict[str, Any] = None\n    memory_id: str = None\n    \n    def __post_init__(self):\n        if self.memory_id is None:\n            self.memory_id = hashlib.md5(\n                f\"{self.content}{self.timestamp}\".encode()\n            ).hexdigest()\n        if self.metadata is None:\n            self.metadata = {}\n\n\nclass EpisodicMemory:\n    \"\"\"\n    Vector-based episodic memory using OpenAI embeddings.\n    Supports similarity search and importance-based forgetting.\n    \"\"\"\n    \n    def __init__(self, client: AsyncOpenAI, max_memories: int = 10000):\n        self.client = client\n        self.memories: Dict[str, Memory] = {}\n        self.max_memories = max_memories\n        self.access_counts: Dict[str, int] = {}\n        \n    async def add_memory(\n        self, \n        content: str, \n        importance: float = 0.5,\n        metadata: Optional[Dict] = None\n    ) -> str:\n        \"\"\"\n        Add a new memory to the store.\n        \n        Args:\n            content: The text content to remember\n            importance: Significance score (0-1), higher = retain longer\n            metadata: Additional context (source, tags, etc.)\n            \n        Returns:\n            memory_id: Unique identifier for the memory\n        \"\"\"\n        # Generate embedding\n        embedding = await self._get_embedding(content)\n        \n        memory = Memory(\n            content=content,\n            timestamp=datetime.now(),\n            importance=importance,\n            embedding=embedding,\n            metadata=metadata or {}\n        )\n        \n        # Manage memory capacity\n        if len(self.memories) >= self.max_memories:\n            await self._consolidate_memories()\n            \n        self.memories[memory.memory_id] = memory\n        self.access_counts[memory.memory_id] = 0\n        \n        logger.debug(f\"Memory added: {memory.memory_id[:8]}...\")\n        return memory.memory_id\n    \n    async def retrieve_relevant(\n        self, \n        query: str, \n        top_k: int = 5,\n        min_similarity: float = 0.7\n    ) -> List[Memory]:\n        \"\"\"\n        Retrieve memories most similar to the query using cosine similarity.\n        \n        Args:\n            query: Search query\n            top_k: Number of memories to return\n            min_similarity: Minimum cosine similarity threshold\n            \n        Returns:\n            List of relevant memories sorted by relevance\n        \"\"\"\n        if not self.memories:\n            return []\n            \n        query_embedding = await self._get_embedding(query)\n        \n        similarities = []\n        for mem_id, memory in self.memories.items():\n            if memory.embedding:\n                sim = self._cosine_similarity(query_embedding, memory.embedding)\n                if sim >= min_similarity:\n                    # Boost by importance and recency\n                    time_decay = self._calculate_time_decay(memory.timestamp)\n                    score = sim * (1 + memory.importance) * time_decay\n                    similarities.append((mem_id, score))\n                    self.access_counts[mem_id] += 1\n        \n        # Sort by score and return top_k\n        similarities.sort(key=lambda x: x[1], reverse=True)\n        top_memories = [\n            self.memories[mem_id] \n            for mem_id, _ in similarities[:top_k]\n        ]\n        \n        return top_memories\n    \n    async def _get_embedding(self, text: str) -> List[float]:\n        \"\"\"Generate embedding using OpenAI API.\"\"\"\n        try:\n            response = await self.client.embeddings.create(\n                model=\"text-embedding-ada-002\",\n                input=text[:8000]  # Truncate if too long\n            )\n            return response.data[0].embedding\n        except Exception as e:\n            logger.error(f\"Embedding generation failed: {e}\")\n            return [0.0] * 1536  # Return zero vector on failure\n    \n    def _cosine_similarity(self, a: List[float], b: List[float]) -> float:\n        \"\"\"Calculate cosine similarity between two vectors.\"\"\"\n        a_vec = np.array(a)\n        b_vec = np.array(b)\n        return float(np.dot(a_vec, b_vec) / (np.linalg.norm(a_vec) * np.linalg.norm(b_vec)))\n    \n    def _calculate_time_decay(self, timestamp: datetime
+    "files": [
+        {
+            "filename": "agi.py",
+            "content": "import openai
+
+# 初始化OpenAI API客户端
+openai.api_key = 'your_openai_api_key'
+
+def generate_response(prompt):
+    # 调用OpenAI的文本生成API
+    response = openai.Completion.create(
+        engine='text-davinci-003',
+        prompt=prompt,
+        max_tokens=150  # 设置返回的最大字符数
+    )
+    # 返回生成的文本
+    return response.choices[0].text.strip()
+
+# 示例使用
+if __name__ == '__main__':
+    user_input = input('请输入您的问题: ')
+    generated_text = generate_response(user_input)
+    print('AGI响应:', generated_text)"
+        }
+    ]
+}
+```
