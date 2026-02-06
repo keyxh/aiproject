@@ -1,21 +1,16 @@
 # agi
 
-```json
+ ```json
 {
-    "files": [
-        {
-            "filename": "agi.py",
-            "content": "# agi.py\n\nimport openai\nfrom typing import Any, Dict, Optional\n\nclass AGI:\n    def __init__(self, api_key: str):\n        self.api_key = api_key\n        self.api = openai.OpenAI(api_key=self.api_key)\n\n    def generate_response(self, prompt: str, max_tokens: int = 150) -> str:\n        """Generate a response using the OpenAI API.\n        Args:\n            prompt (str): The user's input prompt.\n            max_tokens (int): The maximum number of tokens to generate.\n        Returns:\n            str: The generated response.\n        """
-        \n        response = self.api.Completion.create(\n            engine=\"text-davinci-002\",\n            prompt=prompt,\n            max_tokens=max_tokens\n        )\n        return response.choices[0].text.strip()\n\n# Example usage\nif __name__ == \"__main__\":\n    API_KEY = 'your_openai_api_key_here'\n    agi_instance = AGI(API_KEY)\n    user_input = 'Tell me a joke'\n    response = agi_instance.generate_response(user_input)\n    print(response)\n"
-        },
-        {
-            "filename": "requirements.txt",
-            "content": "openai==0.27.0\n"
-        },
-        {
-            "filename": "README.md",
-            "content": "# AGI Project\n\nThis is the README for the AGI project.\n\n## Overview\n\nThe AGI project aims to create an Artificial General Intelligence (AGI) using the OpenAI API.\n\n## Features\n\n- Uses OpenAI's GPT-3 model for natural language processing.\n- Can generate human-like text responses to user prompts.\n\n## Installation\n\nTo install the AGI project, run the following command:\n\n    pip install -r requirements.txt\n\n## Usage\n\nCreate an instance of the AGI class and call the `generate_response` method with a prompt to get a response.\n\n```python\nfrom agi import AGI\n\napi_key = 'your_openai_api_key_here'\nagi_instance = AGI(api_key)\nuser_input = 'Tell me a joke'\nresponse = agi_instance.generate_response(user_input)\nprint(response)\n```"
-        }
-    ]
-}
-```
+  "files": [
+    {
+      "filename": "config/settings.py",
+      "content": "\"\"\"\nAGI系统配置管理\n采用Pydantic进行配置验证，支持环境变量注入\n\"\"\"\nfrom pydantic_settings import BaseSettings\nfrom typing import Optional, List\n\n\nclass AGIConfig(BaseSettings):\n    \"\"\"\n    AGI核心配置类\n    架构原则：配置与代码分离，支持多环境部署\n    \"\"\"\n    # OpenAI API配置\n    openai_api_key: str\n    openai_base_url: Optional[str] = \"https://api.openai.com/v1\"\n    model_name: str = \"gpt-4o\"\n    temperature: float = 0.7\n    max_tokens: int = 4096\n    \n    # 认知架构配置\n    max_iterations: int = 10  # 防止无限循环\n    reflection_threshold: float = 0.8  # 反思触发阈值\n    \n    # 记忆系统配置\n    memory_backend: str = \"chromadb\"  # 可选：memory, redis, chromadb\n    vector_dim: int = 1536  # OpenAI embedding维度\n    max_context_tokens: int = 8000\n    \n    # 工具配置\n    enabled_tools: List[str] = [\"search\", \"code_executor\", \"file_system\"]\n    \n    # 元认知配置\n    enable_self_reflection: bool = True\n    enable_goal_management: bool = True\n    \n    class Config:\n        env_file = \".env\"\n        env_prefix = \"AGI_\"\n\n\n# 全局配置实例\nconfig = AGIConfig()\n"
+    },
+    {
+      "filename": "core/types.py",
+      "content": "\"\"\"\nAGI系统核心类型定义\n定义数据模型和枚举，确保类型安全\n\"\"\"\nfrom enum import Enum\nfrom typing import Dict, List, Optional, Any\nfrom pydantic import BaseModel, Field\nfrom datetime import datetime\n\n\nclass ThoughtType(str, Enum):\n    \"\"\"思维类型枚举 - 认知架构的核心分类\"\"\"\n    OBSERVATION = \"observation\"      # 观察\n    REASONING = \"reasoning\"          # 推理\n    PLANNING = \"planning\"            # 规划\n    ACTION = \"action\"                # 行动\n    REFLECTION = \"reflection\"        # 反思\n    GOAL_SETTING = \"goal_setting\"    # 目标设定\n\n\nclass CognitiveState(str, Enum):\n    \"\"\"认知状态机\"\"\"\n    IDLE = \"idle\"\n    PERCEIVING = \"perceiving\"\n    REASONING = \"reasoning\"\n    PLANNING = \"planning\"\n    EXECUTING = \"executing\"\n    REFLECTING = \"reflecting\"\n    LEARNING = \"learning\"\n\n\nclass Thought(BaseModel):\n    \"\"\"\n    思维单元 - 认知过程的原子记录\n    支持链式思维（Chain-of-Thought）和树状思维（Tree-of-Thoughts）\n    \"\"\"\n    id: str = Field(default_factory=lambda: f\"thought_{datetime.now().timestamp()}\")\n    type: ThoughtType\n    content: str\n    timestamp: datetime = Field(default_factory=datetime.now)\n    parent_id: Optional[str] = None  # 支持思维树结构\n    confidence: float = Field(ge=0.0, le=1.0, default=1.0)\n    metadata: Dict[str, Any] = Field(default_factory=dict)\n\n\nclass Goal(BaseModel):\n    \"\"\"\n    目标表示 - 支持层次化目标结构\n    采用OKR（Objectives and Key Results）模型\n    \"\"\"\n    id: str\n    description: str\n    parent_id: Optional[str] = None\n    priority: int = Field(ge=1, le=10, default=5)\n    status: str = \"active\"  # active, completed, failed, suspended\n    success_criteria: List[str] = Field(default_factory=list)\n    created_at: datetime = Field(default_factory=datetime.now)\n    deadline: Optional[datetime] = None\n\n\nclass Action(BaseModel):\n    \"\"\"可执行动作表示\"\"\"\n    tool_name: str\n    parameters: Dict[str, Any]\n    thought_process: Optional[str] = None\n    expected_outcome: Optional[str] = None\n\n\nclass MemoryItem(BaseModel):\n    \"\"\"记忆项 - 统一记忆格式\"\"\"\n    id: str\n    content: str\n    embedding: Optional[List[float]] = None\n    memory_type: str  # episodic, semantic, procedural\n    importance: float = Field(ge=0.0, le=1.0, default=0.5)\n    timestamp: datetime = Field(default_factory=datetime.now)\n    tags: List[str] = Field(default_factory=list)\n"
+    },
+    {
+      "filename": "memory/base.py",
+      "content": "\"\"\"\n记忆系统抽象基类\n实现分层记忆架构：工作记忆、情景记忆、语义记忆\n遵循认知架构原则\n\"\"\"\nfrom abc import ABC, abstractmethod\nfrom typing import List, Optional, Dict, Any\nfrom core.types import MemoryItem, Thought\n\n\nclass BaseMemory(ABC):\n    \"\"\"\n    记忆系统抽象基类\n    架构原则：\n    1. 检索增强生成（RAG）支持\n    2. 记忆巩固（Memory Consolidation）\n    3. 重要性评估与遗忘机制\n    \"\"\"\n    \n    @abstractmethod\n   
