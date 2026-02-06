@@ -1,16 +1,15 @@
 # agi
 
-```json
 {
     "files": [
         {
-            "filename": "agi.py",
-            "content": "# agi.py\n\nimport openai\n\nclass AGI:\n    def __init__(self, api_key):\n        self.api_key = api_key\n        openai.api_key = api_key\n\n    def generate_response(self, prompt):\n        response = openai.Completion.create(\n            engine='text-davinci-002',\n            prompt=prompt,\n            max_tokens=150\n        )\n        return response.choices[0].text.strip()\n\n# Example usage:\nif __name__ == '__main__':\n    api_key = 'your_openai_api_key_here'\n    agi_instance = AGI(api_key)\n    prompt = 'Translate the following English text to French: Hello, how are you?'\n    print(agi_instance.generate_response(prompt))\n"
+            "filename": "requirements.txt",
+            "content": "openai>=1.0.0\npython-dotenv>=1.0.0"
         },
         {
-            "filename": "README.md",
-            "content": "# AGI Project\n\nThis project aims to create an Artificial General Intelligence (AGI) using the OpenAI API.\n\n## Features\n- Uses OpenAI's text-davinci-002 engine for natural language processing\n- Can generate text based on prompts\n\n## Installation\nNo external packages are required as only the OpenAI Python client library is used.\n\n## Usage\n```python\nfrom agi import AGI\n\napi_key = 'your_openai_api_key_here'\nagi_instance = AGI(api_key)\nprompt = 'Translate the following English text to French: Hello, how are you?'\nprint(generate_response(prompt))\n```"
-        }
-    ]
-}
-```
+            "filename": "config.py",
+            "content": "import os\nfrom dotenv import load_dotenv\n\nload_dotenv()  # 从.env文件加载环境变量\n\nOPENAI_API_KEY = os.getenv(\"OPENAI_API_KEY\")\nif not OPENAI_API_KEY:\n    raise ValueError(\"OPENAI_API_KEY not set in environment variables\")\n\n# 其他配置\nMODEL = \"gpt-4\"  # 使用GPT-4模型\nTEMPERATURE = 0.7\nMAX_TOKENS = 1000"
+        },
+        {
+            "filename": "agi.py",
+            "content": "\"\"\"\nAGI模块：实现一个基于OpenAI API的AGI代理。\n\"\"\"\n\nimport openai\nfrom config import OPENAI_API_KEY, MODEL, TEMPERATURE, MAX_TOKENS\n\nclass AGI:\n    \"\"\"\n    Artificial General Intelligence 代理类。\n    使用OpenAI API进行智能交互。\n    \"\"\"\n\n    def __init__(self, model=MODEL, temperature=TEMPERATURE, max_tokens=MAX_TOKENS):\n        \"\"\"\n        初始化AGI代理。\n\n        Args:\n            model (str): OpenAI模型名称。\n            temperature (float): 生成文本的随机性。\n            max_tokens (int): 最大生成令牌数。\n        \"\"\"\n        self.client =
