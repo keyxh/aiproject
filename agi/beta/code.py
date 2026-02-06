@@ -2,11 +2,28 @@
 
 ```json
 {
-  "files": [
-    {
-      "filename": "agent.py",
-      "content": "# This is a basic example of an agent that interacts with the OpenAI API.\n\nimport openai\n\nclass AGIAgent:\n    def __init__(self, api_key):\n        self.api_key = api_key\n        openai.api_key = self.api_key\n\n    def generate_response(self, prompt):\n        response = openai.Completion.create(\n            engine=\"text-davinci-003\",\n            prompt=prompt,\n            max_tokens=100,\n            n=1,\n            stop=None,\n            temperature=0.7\n        )\n        return response.choices[0].text\n\nif __name__ == '__main__':\n    agent = AGIAgent(\"YOUR_API_KEY\")\n    prompt = \"What is the meaning of life?\"\n    response = agent.generate_response(prompt)\n    print(response)"
-    }
-  ]
+    "files": [
+        {
+            "filename": "agi.py",
+            "content": "import openai
+
+# 初始化OpenAI API客户端
+openai.api_key = 'your_openai_api_key'
+
+def generate_response(prompt):
+    # 使用OpenAI的gpt-3模型生成响应
+    response = openai.Completion.create(
+        engine='text-davinci-003',
+        prompt=prompt,
+        max_tokens=150  # 设置生成的文本的最大字符数
+    )
+    return response.choices[0].text.strip()
+
+if __name__ == '__main__':
+    user_input = input('请输入您的问题: ')
+    response = generate_response(user_input)
+    print('AGI响应:', response)"
+        }
+    ]
 }
 ```
