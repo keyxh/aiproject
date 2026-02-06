@@ -1,20 +1,6 @@
 # agi
 
-```json
-{
-    "files": [
-        {
-            "filename": "agi.py",
-            "content": "# agi.py\n\nimport openai\nfrom flask import Flask, request, jsonify\n\napp = Flask(__name__)\n\n# OpenAI API Key\n# Replace 'your_api_key_here' with your actual OpenAI API key\nOPENAI_API_KEY = 'your_api_key_here'\n\n# Initialize OpenAI client\nopenai.api_key = OPENAI_API_KEY\n\n\n\n@app.route('/generate', methods=['POST'])\ndef generate_response():\n    data = request.get_json()\n    prompt = data.get('prompt', '')\n    max_tokens = data.get('max_tokens', 50)\n\n    # Call OpenAI API to generate response\n    response = openai.Completion.create(\n        engine='text-davinci-002',  # Use the appropriate engine\n        prompt=prompt,\n        max_tokens=max_tokens\n    )\n\n    return jsonify({'response': response.choices[0].text.strip()})\n\nif __name__ == '__main__':\n    app.run(debug=True)\n"
-        },
-        {
-            "filename": "requirements.txt",
-            "content": "Flask==2.0.3\nopenai==0.27.0\n"
-        },
-        {
-            "filename": "README.md",
-            "content": "# AGI Project\n\nThis is the README for the AGI project. It aims to create an Artificial General Intelligence using the OpenAI API.\n\n## Features\n\n- Uses OpenAI's GPT-3 model for text generation\n- RESTful API endpoint for generating responses\n\n## Setup\n\n1. Install the required packages:\n    \tpip install -r requirements.txt\n\n2. Run the application:\n    \tpython agi.py\n\n## Usage\n\nSend a POST request to the `/generate` endpoint with a JSON body containing a `prompt` and an optional `max_tokens`.\n\nExample Request:\n\n```json\n{\n    \"prompt\": \"Explain the concept of machine learning in simple terms\",\n    \"max_tokens\": 100\n}\n```"
-        }
-    ]
-}
-```
+ "files": [
+    {
+      "filename": "agi.py",
+      "content": "'''\nAGI模块\n\n这个模块是一个AGI系统的核心部分，它使用OpenAI API来处理和响应用户输入。\n\n架构:\n- AGI系统：包含所有AGI组件的核心\n- OpenAI模型：使用OpenAI API进行交互\n\n说明:\n- 确保你有OpenAI API密钥\n- 这个模块假设了其他模块（如用户输入处理器）的存在。\n'''\n\n\"\"\"utf-8\"\n\n# AGI模块\n\n\"\"\"\nAGI系统模块\n\n这个模块提供了AGI系统的核心功能，包括处理用户输入、与模型交互以及生成响应。\n\n函数:\n- run_agi(): 主入口函数，启动AGI系统的运行\n\"\"\"\n\ndef run_agi():\n    \"\"\"\n    主入口函数，启动AGI系统的运行。\n    \"\"\"\n    # 用户输入处理\n    user_input = get_user_input()\n    \n    # 使用OpenAI模型处理输入并生成响应\n    response = openai_model_interact(user_input)\n    \n    # 输出响应\n    send_response(response)\n    \ndef get_user_input():\n    \"\"\"\n    获取用户输入。\n    这里假设有一个函数来获取输入，例如从命令行或用户界面中获取输入。\n    \"\"\"\n    # 用户输入获取的实际实现\n    pass\n\ndef openai_model_interact(input_text):\n    \"\"\"\n    使用OpenAI模型处理输入并生成响应。\n    \"\"\"\n    openai.api_key = '你的OpenAI API密钥'\n    response = openai.Completion.create(\n        engine=\"text-davinci-003\",\n        prompt=f\"用户输入：{input_text}\\n生成AGI响应：\",\n        max_tokens=150\n    )\n    \n    return response.choices[0].text.strip()\n\n# 以下是一个模拟用户输入的函数，用于测试get_user_input。\ndef test_get_user_input():\n    \"\"\"\n    测试get_user_input函数的一个简单示例。\n    \"\"\"\n    # 这里可以添加更多的测试用例，以确保get_user_input的正确性。\n    pass\n\nif __name__ == \"__main__\":\n    run_agi()\n"]}"
