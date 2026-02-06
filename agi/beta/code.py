@@ -1,12 +1,7 @@
 # agi
 
-```json
-{
-  "files": [
+ "files": [
     {
       "filename": "agi.py",
-      "content": "# agi.py\n\nimport openai\n\n# Set your OpenAI API key\nopenai.api_key = \"YOUR_API_KEY\"\n\nclass AGI:\n    def __init__(self):\n        self.memory = []\n\n    def process_input(self, user_input):\n        \"\"\"\n        Processes user input and interacts with the OpenAI API.\n\n        Args:\n            user_input (str): The user's input text.\n\n        Returns:\n            str: The AGI's response.\n        \"\"\"\n\n        # Store user input in memory\n        self.memory.append(user_input)\n\n        # Generate a response using the OpenAI API\n        response = openai.Completion.create(\n            engine=\"text-davinci-003\",  # Use a suitable OpenAI engine\n            prompt=f\"Context: {\\\"\\n\\\".join(self.memory)}\\nUser: {user_input}\\nAGI:\",\n            max_tokens=150,\n            temperature=0.7\n        )\n\n        return response.choices[0].text\n\n# Example usage:\n agi = AGI()\n while True:\n     user_input = input(\"You: \")\n     if user_input.lower() == \"quit\":\n         break\n     response = agi.process_input(user_input)\n     print(\"AGI:\", response)\n"
-    }
-  ]
-}
-```
+      "content": "'''\nAGI模块\n\n模块用于构建具有自主行为的AGI系统。\n\n函数:\n    run_agent_task(任务描述): 使用OpenAI模型执行任务。\n'''\n\n\n# AGI模块\n\nfrom openai import completion\n\ndef run_agent_task(task_description):\n    \"\"\"\n    使用OpenAI模型执行给定任务。\n    \n    参数:\n        task_description (str): 任务描述。\n    \n    返回:\n        str: 模型生成的输出。\n    \"\"\"\n    \n    # 任务描述设置\n    prompt = f\"执行任务：{task_description}\\n生成输出：\"\n    \n    # 模型调用设置\n    response = completion.create(\n        engine=\"davinci\",\n        prompt=prompt,\n        max_tokens=150\n    )\n    \n    return response.choices[0].text.strip()"
+]
