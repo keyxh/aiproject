@@ -1,56 +1,61 @@
 # AGI (Artificial General Intelligence) Implementation using OpenAI API
-# This file contains the core logic for interacting with the OpenAI API to simulate AGI behavior
+# This is a basic framework to demonstrate how an AGI could be built using OpenAI's models
 
 import openai
 import os
-from dotenv import load_dotenv
+from typing import List, Dict, Any
 
-# Load environment variables from .env file
-load_dotenv()
-
-# Set up OpenAI API key
+# Set your OpenAI API key here
 openai.api_key = os.getenv('OPENAI_API_KEY')
 
-# Define a class for AGI system
 class AGI:
-    def __init__(self, model_name="gpt-3.5-turbo"):
+    def __init__(self, model_name: str = 'gpt-3.5-turbo', max_tokens: int = 1000):
         self.model_name = model_name
+        self.max_tokens = max_tokens
+        self.conversation_history: List[Dict[str, Any]] = []
 
-    def generate_response(self, prompt):
-        """Generate a response based on the given prompt using OpenAI's GPT model.
+    def add_to_conversation(self, role: str, content: str):
+        """Add a message to the conversation history."""
+        self.conversation_history.append({"role": role, "content": content})
 
-        Args:
-            prompt (str): The input prompt to the AGI system.
-
-        Returns:
-            str: The generated response from the AGI system.
-        """
+    def get_response(self, prompt: str) -> str:
+        """Get a response from the OpenAI model based on the provided prompt."""
+        self.add_to_conversation("user", prompt)
+        
         try:
             response = openai.ChatCompletion.create(
                 model=self.model_name,
-                messages=[{"role": "user", "content": prompt}]
+                messages=self.conversation_history,
+                max_tokens=self.max_tokens
             )
-            return response.choices[0].message.content
+            
+            # Extract and add the assistant's response to the conversation history
+            assistant_response = response.choices[0].message.content
+            self.add_to_conversation("assistant", assistant_response)
+            return assistant_response
         except Exception as e:
-            return f"Error generating response: {str(e)}"
+            return f"Error: {str(e)}"
 
-    def train(self, training_data):
-        """Train the AGI model with provided training data.
+    def reset_conversation(self):
+        """Reset the conversation history."""
+        self.conversation_history = []
 
-        Args:
-            training_data (list of tuples): List of (input, output) pairs for training.
+    def get_conversation_history(self) -> List[Dict[str, Any]]:
+        """Get the current conversation history."""
+        return self.conversation_history
 
-        Returns:
-            str: Status message indicating the training process.
-        """
-        # Note: OpenAI does not support direct training of models, so this is a placeholder
-        # In a real-world scenario, you might use fine-tuning or other methods.
-        return "Training is not supported directly by OpenAI's API. Consider using fine-tuning if applicable."
-
-# Example usage
 if __name__ == "__main__":
+    # Example usage of the AGI class
     agi = AGI()
-    user_input = "Explain the concept of artificial general intelligence."
-    response = agi.generate_response(user_input)
-    print(f"User: {user_input}")
-    print(f"AGI: {response}")
+    
+    while True:
+        user_input = input("You: ")
+        if user_input.lower() == 'exit':
+            break
+        
+        response = agi.get_response(user_input)
+        print(f"AGI: {response}")
+
+        # Optional: Reset conversation after a certain number of interactions
+        # if len(agi.get_conversation_history()) > 10:
+        #     agi.reset_conversation()
