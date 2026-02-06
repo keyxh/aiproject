@@ -2,19 +2,11 @@
 
 ```json
 {
-    "files": [
-        {
-            "filename": "agi.py",
-            "content": "# agi.py\n\nimport openai\nfrom flask import Flask, request, jsonify\n\n# Initialize the OpenAI API client\nopenai.api_key = 'your-api-key-here'\n\napp = Flask(__name__)\n\n\n# Endpoint to generate text based on user input\n@app.route('/generate', methods=['POST'])\n\ndef generate_text):\n    data = request.get_json()\n    prompt = data.get('prompt')\n    max_tokens = data.get('max_tokens', 50)\n\n    # Call the OpenAI API to generate text\n    response = openai.Completion.create(\n        engine='text-davinci-002',\n        prompt=prompt,\n        max_tokens=max_tokens\n    )\n    return jsonify({'text': response.choices[0].text.strip()})\n\n\n# Run the Flask app\nif __name__ == '__main__':\n    app.run(debug=True)\n"
-        },
-        {
-            "filename": "requirements.txt",
-            "content": "Flask==2.0.3\nopenai==0.27.0\n"
-        },
-        {
-            "filename": "README.md",
-            "content": "# AGI Project\n\nThis project aims to create an Artificial General Intelligence (AGI) using the OpenAI API.\n\n## Features\n- Uses OpenAI's GPT-3 model to generate text based on user prompts.\n\n## Installation\n\nTo install the required packages, run:\n\n    pip install -r requirements.txt\n\n## Usage\n\nSend a POST request to the `/generate` endpoint with a JSON payload containing a `prompt` and an optional `max_tokens` field.\n\nExample Request:\n\n    POST /generate\n    Content-Type: application/json\n\n    {\n        \"prompt\": \"Explain the concept of AGI in simple terms\",\n        \"max_tokens\": 100\n    }\n\nExample Response:\n\n    {\n        \"text\": \"AGI, or Artificial General Intelligence, is a field of AI research that aims to create machines capable of general intelligence. This means that these machines would be able to understand, learn, and apply knowledge across a wide range of tasks and domains, much like humans do.\"\n    }\n\n## Contributing\n\nContributions are welcome! Please read the contributing guidelines before submitting a pull request.\n"
-        }
-    ]
+"files": [
+{
+"filename": "agent.py",
+"content": "# agent.py\n\nimport openai\n\nclass Agent:\n    def __init__(self, api_key):\n        \"\"\"\n        Initializes the agent with an OpenAI API key.\n        \"\"\"\n        openai.api_key = api_key\n        self.memory = {}\n\n    def think(self, prompt):\n        \"\"\"\n        Processes a prompt, leveraging OpenAI's API for reasoning.\n\n        Args:\n            prompt: The input prompt for the agent.\n\n        Returns:\n            The agent's response.\n        \"\"\"\n        # Incorporate past interactions from memory\n        if self.memory:\n            prompt = f\"{self.memory.get('last_interaction', '')} You: {prompt}\"\n\n        response = openai.Completion.create(\n            engine=\"text-davinci-003\",  # Or a suitable OpenAI engine\n            prompt=prompt,\n            max_tokens=150,  # Adjust as needed\n            temperature=0.7  # Control creativity\n        )\n\n        response_text = response.choices[0].text.strip()\n\n        # Store interaction for context\n        self.memory['last_interaction'] = f\"Agent: {response_text}\"\n        return response_text\n\n# Example usage\n\nagent = Agent(\"YOUR_API_KEY\")\n\nwhile True:\n    user_input = input(\"You: \")\n    if user_input.lower() == \"exit\":\n        break\n    response = agent.think(user_input)\n    print(f\"Agent: {response}\")\n"
+}
+]
 }
 ```
