@@ -4,48 +4,10 @@
 {
   "files": [
     {
-      "filename": "agi.py",
-      "content": "
-# AGI 实现
-import os
-import json
-import requests
-
-class AGI:
-  def __init__(self, api_key):
-    # 初始化 OpenAI API
-    self.api_key = api_key
-    self.api_url = 'https://api.openai.com/v1'
-
-  def get_response(self, prompt):
-    # 获取 OpenAI API 的响应
-    headers = {
-      'Authorization': f'Bearer {self.api_key}',
-      'Content-Type': 'application/json'
-    }
-    data = {
-      'prompt': prompt,
-      'max_tokens': 1024,
-      'temperature': 0.7
-    }
-    response = requests.post(f'{self.api_url}/completions', headers=headers, data=json.dumps(data))
-    return response.json()['choices'][0]['text']
-
-  def process_input(self, input_text):
-    # 处理输入文本
-    prompt = f'{input_text} \\n'
-    response = self.get_response(prompt)
-    return response
-
-# 示例用法
-if __name__ == '__main__':
-  api_key = 'YOUR_API_KEY'  # 替换为你的 OpenAI API 密钥
-  agi = AGI(api_key)
-  input_text = '你好，AGI！'
-  response = agi.process_input(input_text)
-  print(response)
-"
+      "filename": "agent.py",
+      "content": "# agent.py\n\nimport openai\n\nclass AGIAgent:\n    def __init__(self, api_key):\n        \"\"\"\n        Initializes the AGI agent with an OpenAI API key.\n\n        Args:\n            api_key: The OpenAI API key.\n        \"\"\"\n        openai.api_key = api_key\n        self.memory = []  # Initialize memory to store context\n\n    def process_input(self, user_input):\n        \"\"\"\n        Processes user input, interacts with the OpenAI API, and generates a response.\n\n        Args:\n            user_input: The user's input string.\n\n        Returns:\n            The agent's response string.\n        \"\"\"\n        context = \"\\n\".join(self.memory) + \"\\nUser: \" + user_input\n        response = openai.Completion.create(\n          engine=\"text-davinci-003\",  # Or another suitable engine\n          prompt=context,\n          max_tokens=150  # Adjust as needed\n        )\n        agent_response = response.choices[0].text.strip()\n        self.memory.append(f\"Agent: {agent_response}\")\n        return agent_response\n\n# Example usage:\n# agent = AGIAgent(\"YOUR_API_KEY\")\n# while True:\n#     user_input = input(\"You: \")\n#     response = agent.process_input(user_input)\n#     print(\"Agent: \", response)"
     }
   ]
 }
+
 ```
