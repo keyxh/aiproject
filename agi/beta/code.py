@@ -1,31 +1,23 @@
 # agi
 
-```json
 {
     "files": [
         {
-            "filename": "agi.py",
-            "content": "import openai
-
-# 初始化OpenAI API客户端
-openai.api_key = 'your_openai_api_key'
-
-def generate_response(prompt):
-    # 调用OpenAI的文本生成API
-    response = openai.Completion.create(
-        engine='text-davinci-003',
-        prompt=prompt,
-        max_tokens=150  # 设置返回的最大字符数
-    )
-    # 返回生成的文本
-    return response.choices[0].text.strip()
-
-if __name__ == '__main__':
-    # 示例：生成一段文本
-    user_input = input('请输入提示信息: ')
-    generated_text = generate_response(user_input)
-    print('生成的文本: ', generated_text)"
-        }
-    ]
-}
-```
+            "filename": "agi/__init__.py",
+            "content": "# agi package initialization\n\n\"\"\"Top level package for the AGI framework.\n\nExports the main :class:`~agi.agent.Agent` class so users can simply::\n\n    from agi import Agent\n\"\"\"\n\nfrom .agent import Agent\n\n__all__ = [\"Agent\"]\n"
+        },
+        {
+            "filename": "agi/config.py",
+            "content": "import os\nfrom dataclasses import dataclass\nfrom typing import Optional\n\n\n@dataclass(frozen=True)\nclass Config:\n    \"\"\"Configuration holder for the AGI framework.\n\n    The configuration is loaded from environment variables.  This keeps\n    secrets such as the OpenAI API key out of source control.\n    \"\"\"\n\n    openai_api_key: str\n    model_name: str = \"gpt-4o-mini\"\n    temperature: float = 0.7\n    max_tokens: int = 1024\n    request_timeout: int = 30\n    # Add more configuration options as needed\n\n    @staticmethod\n    def from_env() -> \"Config\":\n        \"\"\"Create a :class:`Config` instance from environment variables.\n\n        Raises:\n            ValueError: If the required ``OPENAI_API_KEY`` variable is missing.\n        \"\"\"\n        api_key = os.getenv(\"OPENAI_API_KEY\")\n        if not api_key:\n            raise ValueError(\"OPENAI_API_KEY environment variable is required\")\n        return Config(\n            openai_api_key=api_key,\n            model_name=os.getenv(\"OPENAI_MODEL_NAME\", \"gpt-4o-mini\"),\n            temperature=float(os.getenv(\"OPENAI_TEMPERATURE\", \"0.7\")),\n            max_tokens=int(os.getenv(\"OPENAI_MAX_TOKENS\", \"1024\")),\n            request_timeout=int(os.getenv(\"OPENAI_TIMEOUT\", \"30\")),\n        )\n"
+        },
+        {
+            "filename": "agi/client.py",
+            "content": "import json\nimport time\nfrom typing import Any, Dict, List, Optional\n\nimport openai\nfrom openai import OpenAI\nfrom openai.types.chat import ChatCompletionMessageParam\n\nfrom .config import Config\n\n\nclass OpenAIClient:\n    \"\"\"Thin wrapper around the OpenAI Chat Completion API.\n\n    The wrapper adds:\n    * Automatic retry with exponential back‑off for transient errors.\n    * Simple synchronous and asynchronous interfaces.\n    * Centralised handling of configuration (model, temperature, etc.).\n    \"\"\"\n\n    def __init__(self, config: Config):\n        self.config = config\n        # Initialise the official OpenAI SDK client – it respects the API key automatically.\n        self.client = OpenAI(api_key=self.config.openai_api_key)\n\n    def _call_api(self, messages: List[ChatCompletionMessageParam]) -> Dict[str, Any]:\n        \"\"\"Internal method that performs the HTTP request with retries.\n\n        Args:\n            messages: List of messages formatted according to the OpenAI spec.\n\n        Returns:\n            The raw JSON response from the API.\n        \"\"\"\n        max_retries = 5\n        backoff = 1  # seconds\n        for attempt in range(max_retries):\n            try:\n                response = self.client.chat.completions.create(\n                    model=self.config.model_name,\n                    messages=messages,\n                    temperature=self.config.temperature,\n                    max_tokens=self.config.max_tokens,\n                    timeout=self.config.request_timeout,\n                )\n                return response.model_dump()\n            except (openai.APIError, openai.RateLimitError, openai.APIConnectionError) as exc:\n                # These are typical transient errors.\n                if attempt == max_retries - 1:\n                    raise\n                time.sleep(backoff)\n                backoff *= 2  # exponential back‑off\n                continue\n        # Should never reach here because the loop either returns or raises.\n        raise RuntimeError(\"OpenAIClient: exhausted retries without success\")\n\n    def chat(self, system_prompt: str, user_prompt: str, tools: Optional[List[Dict[str, Any]]] = None) -> str:\n        \"\"\"Synchronous chat method.\n\n        Args:\n            system_prompt: High‑level instruction for the model.\n            user_prompt: The actual query or command from the user.\n            tools: Optional OpenAI function‑calling spec.\n\n        Returns:\n            The model's response content as a string.\n        \"\"\"\n        messages: List[ChatCompletionMessageParam] = [\n            {\"role\": \"system\", \"content\": system_prompt},\n            {\"role\": \"user\", \"content\": user_prompt},\n        ]\n        if tools:\n            # OpenAI expects the tools definition in the request body, not as a message.\n            # The SDK supports it via the `tools` parameter on the request.\n            # For simplicity we embed the spec in the system prompt when tools are used.\n            messages[0][\"content\"] += \"\\n\\nYou have access to the following tools: \" + json.dumps(tools)\n        raw = self._call_api(messages)\n        # Extract the assistant's reply.  The SDK returns a list of choices; we take the first.\n        return raw[\"choices\"][0][\"message\"][\"content\"]\n"
+        },
+        {
+            "filename": "agi/memory.py",
+            "content": "from __future__ import annotations\n\nfrom collections import deque\nfrom dataclasses import dataclass\nfrom typing import Deque, List\n\n\n@dataclass\nclass MemoryEntry:\n    \"\"\"Simple data class representing a single memory chunk.\n\n    Attributes:\n        role: Either \"user\" or \"assistant\" – mirrors OpenAI chat roles.\n        content: The raw text of the message.\n    \"\"\"\n\n    role: str\n    content: str\n\n\nclass ShortTermMemory:\n    \"\"\"A fixed‑size FIFO buffer that stores recent conversation turns.\n\n    The buffer is deliberately small to keep token usage low.  Older entries are\n    automatically evicted when the capacity is exceeded.\n    \"\"\"\n\n    def __init__(self, capacity: int = 20):\n        self.capacity: int = capacity\n        self.buffer: Deque[MemoryEntry] = deque(maxlen=capacity)\n\n    def add(self, role: str, content: str) -> None:\n        self.buffer.append(MemoryEntry(role=role, content=content))\n\n    def to_messages(self) -> List[dict]:\n        \"\"\"Convert stored entries to the format expected by the OpenAI client.\"\"\"\n        return [{\"role\": entry.role, \"content\": entry.content} for entry in self.buffer]\n\n    def clear(self) -> None:\n        self.buffer.clear()\n"
+        },
+        {
+            "filename": "agi/tools.py",
+            "content": "from __future__ import annotations\n\nimport math\nfrom abc import ABC, abstractmethod\nfrom typing import Any, Dict, List\n\n\nclass Tool(ABC):\n    \"\"\"Abstract base class for all tools that an AGI agent can invoke.\n\n    Concrete implementations must provide a *name*, a *description* and a\n    :meth:`run` method that receives JSON‑serialisable arguments.\n    \"\"\"\n\n    @property\n    @abstractmethod\n    def name(self) -> str:\n        \"\"\"Unique identifier used in the OpenAI function‑calling spec.\"\"\"\n
